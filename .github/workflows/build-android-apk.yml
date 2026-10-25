@@ -29,9 +29,6 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Setup pnpm
         uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa
         with:
@@ -55,7 +52,7 @@ jobs:
         run: pnpm exec expo prebuild --platform android --no-install
 
       - name: Setup Gradle cache
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d # v4
 
       - name: Build Standalone Release APK
         working-directory: apps/mobile/android
