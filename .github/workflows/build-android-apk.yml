@@ -49,7 +49,11 @@ jobs:
           CI: '1'
           SENTRY_DISABLE_AUTO_UPLOAD: 'true'
           SENTRY_DISABLE_NATIVE_DEBUG_UPLOAD: 'true'
-        run: pnpm exec expo prebuild --platform android --no-install
+        run: |
+          pnpm exec expo prebuild --platform android --no-install
+          echo "android.lint.checkReleaseBuilds=false" >> android/gradle.properties
+          echo "android.lint.abortOnError=false" >> android/gradle.properties
+          sed -i 's/-Xmx2048m -XX:MaxMetaspaceSize=512m/-Xmx4096m -XX:MaxMetaspaceSize=1024m/' android/gradle.properties
 
       - name: Setup Gradle cache
         uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d # v4
@@ -59,8 +63,16 @@ jobs:
         env:
           SENTRY_DISABLE_AUTO_UPLOAD: 'true'
           SENTRY_DISABLE_NATIVE_DEBUG_UPLOAD: 'true'
-        # Pixel 10 utilizes arm64-v8a architecture; builds arm64 + universal compatibility
-        run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a
+        # Pixel 10 utilizes arm64-v8a architecture; disable release lint to avoid 3rd-party library lint failures
+        run: |
+          ./gradlew assembleRelease \
+            -PreactNativeArchitectures=arm64-v8a \
+            -x lint \
+            -x lintVitalRelease \
+            -x lintVitalAnalyzeRelease \
+            -x lintVitalReportRelease \
+            --parallel \
+            --build-cache
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
