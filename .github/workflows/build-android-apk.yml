@@ -49,11 +49,7 @@ jobs:
           CI: '1'
           SENTRY_DISABLE_AUTO_UPLOAD: 'true'
           SENTRY_DISABLE_NATIVE_DEBUG_UPLOAD: 'true'
-        run: |
-          pnpm exec expo prebuild --platform android --no-install
-          echo "android.lint.checkReleaseBuilds=false" >> android/gradle.properties
-          echo "android.lint.abortOnError=false" >> android/gradle.properties
-          sed -i 's/-Xmx2048m -XX:MaxMetaspaceSize=512m/-Xmx4096m -XX:MaxMetaspaceSize=1024m/' android/gradle.properties
+        run: pnpm exec expo prebuild --platform android --no-install
 
       - name: Setup Gradle cache
         uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d # v4
@@ -61,18 +57,12 @@ jobs:
       - name: Build Standalone Release APK
         working-directory: apps/mobile/android
         env:
+          CI: '1'
+          NODE_OPTIONS: '--max-old-space-size=4096'
           SENTRY_DISABLE_AUTO_UPLOAD: 'true'
           SENTRY_DISABLE_NATIVE_DEBUG_UPLOAD: 'true'
-        # Pixel 10 utilizes arm64-v8a architecture; disable release lint to avoid 3rd-party library lint failures
-        run: |
-          ./gradlew assembleRelease \
-            -PreactNativeArchitectures=arm64-v8a \
-            -x lint \
-            -x lintVitalRelease \
-            -x lintVitalAnalyzeRelease \
-            -x lintVitalReportRelease \
-            --parallel \
-            --build-cache
+        # Pixel 10 utilizes arm64-v8a architecture; disable release lint tasks to skip 3rd-party library lint issues
+        run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a -x lint -x lintVitalRelease -x lintVitalAnalyzeRelease --stacktrace
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
