@@ -46,6 +46,10 @@ ensure_cargo_tooling() {
 }
 
 ensure_node_tooling() {
+  if [ -d "$HOME/.local/bin" ]; then
+    export PATH="$HOME/.local/bin:$PATH"
+  fi
+
   if command -v node >/dev/null 2>&1 && command -v pnpm >/dev/null 2>&1; then
     return 0
   fi
@@ -142,10 +146,12 @@ PUSH_TARGET=$(git rev-parse @{push} 2>/dev/null || echo "")
 RUST_CHANGED=true
 APP_CHANGED=true
 SITE_CHANGED=false
+MOBILE_CHANGED=false
 
 if [ -n "$PUSH_TARGET" ]; then
   CHANGED=$(git diff --name-only "$PUSH_TARGET"..HEAD)
   APP_CHANGED=false
+  MOBILE_CHANGED=false
   if ! echo "$CHANGED" | grep -qE '^(src-tauri/|Cargo)'; then
     RUST_CHANGED=false
   fi
@@ -153,6 +159,9 @@ if [ -n "$PUSH_TARGET" ]; then
     case "$FILE" in
       site/*)
         SITE_CHANGED=true
+        ;;
+      apps/mobile/*)
+        MOBILE_CHANGED=true
         ;;
       .github/workflows/*|.husky/*|docs/*|*.md)
         ;;
@@ -164,7 +173,14 @@ if [ -n "$PUSH_TARGET" ]; then
 fi
 
 if [ "$APP_CHANGED" = false ]; then
-  if [ "$SITE_CHANGED" = true ]; then
+  if [ "$MOBILE_CHANGED" = true ]; then
+    echo ""
+    echo "📱 Mobile-only push detected; running mobile checks..."
+    pnpm mobile:lint --quiet
+    pnpm mobile:typecheck
+    pnpm --filter @tolaria/mobile test src/workspace/preparedWorkspaceSnapshot.test.ts
+    echo "  ✅ Mobile checks OK"
+  elif [ "$SITE_CHANGED" = true ]; then
     echo ""
     echo "📚 Docs-only push detected; running docs build..."
     pnpm docs:build
@@ -209,7 +225,9 @@ run_sidecar_automatic_checks() {
 }
 
 if ! run_sidecar_automatic_checks; then
-  ensure_cargo_tooling
+  if [ "$RUST_CHANGED" = true ]; then
+    ensure_cargo_tooling
+  fi
 
   # ── 0. Frontend lint ───────────────────────────────────────────────────
   echo ""

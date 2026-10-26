@@ -3,6 +3,10 @@
 set -e
 
 ensure_node_tooling() {
+  if [ -d "$HOME/.local/bin" ]; then
+    export PATH="$HOME/.local/bin:$PATH"
+  fi
+
   if command -v node >/dev/null 2>&1 && command -v pnpm >/dev/null 2>&1; then
     return 0
   fi
