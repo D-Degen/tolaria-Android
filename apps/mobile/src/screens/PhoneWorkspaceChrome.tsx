@@ -1,5 +1,5 @@
-import { CaretLeft } from 'phosphor-react-native'
-import { View } from 'react-native'
+import { ArrowLeft, CaretLeft, List } from 'phosphor-react-native'
+import { Platform, View } from 'react-native'
 import { Text } from '../components/ui/text'
 import { mobileText } from '../i18n/mobileText'
 import { MobileIconButton } from '../ui/MobileIconButton'
@@ -24,7 +24,27 @@ export function PhoneTopBar({
 
 export function PhoneBackButton({ onBack }: { onBack: () => void }) {
   const { mobileColors } = useMobileStyles(createThemeStyles)
-  return <MobileIconButton accessibilityLabel={mobileText('command.navigation.goBack')} testID="phone-back-action" onPress={onBack}>
-    <CaretLeft color={mobileColors.textMuted} size={18} />
-  </MobileIconButton>
+  const BackIcon = Platform.OS === 'android' ? ArrowLeft : CaretLeft
+  return (
+    <MobileIconButton
+      accessibilityLabel={mobileText('command.navigation.goBack')}
+      testID="phone-back-action"
+      onPress={onBack}
+    >
+      <BackIcon color={mobileColors.textMuted} size={18} />
+    </MobileIconButton>
+  )
+}
+
+export function PhoneSidebarButton({ onOpenSidebar }: { onOpenSidebar: () => void }) {
+  const { mobileColors } = useMobileStyles(createThemeStyles)
+  return (
+    <MobileIconButton
+      accessibilityLabel={mobileText('sidebar.action.expand')}
+      testID="phone-sidebar-action"
+      onPress={onOpenSidebar}
+    >
+      <List color={mobileColors.textMuted} size={18} />
+    </MobileIconButton>
+  )
 }

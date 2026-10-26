@@ -1,5 +1,5 @@
 import { Fragment, useCallback } from 'react'
-import { View } from 'react-native'
+import { Pressable, View } from 'react-native'
 import { MobileNoteListPanel } from '../components/workspace/MobileNoteListPanel'
 import { MobilePropertiesPanel } from '../components/workspace/MobilePropertiesPanel'
 import { MobileWorkspaceSidebar } from '../components/workspace/MobileWorkspaceSidebar'
@@ -10,7 +10,7 @@ import { noteFilename, noteWritePath } from '../workspace/mobileWorkspacePathRew
 import { mobileWorkspaceHasNoVault } from '../workspace/mobileWorkspaceEmptyState'
 import { PhoneScreenLayer } from './PhoneScreenLayer'
 import { PhoneEditorScreen } from './PhoneWorkspaceEditorScreen'
-import { PhoneTopBar } from './PhoneWorkspaceChrome'
+import { PhoneSidebarButton, PhoneTopBar } from './PhoneWorkspaceChrome'
 import { createThemeStyles } from './phoneWorkspaceStyles'
 import type { PhoneWorkspaceStateViewProps, PhoneWorkspaceController } from './phoneWorkspaceScreenSupport'
 import { phoneWorkspaceSidebarDrawerWidth } from './phoneWorkspaceTransitions'
@@ -22,6 +22,7 @@ function PhoneNoteListScreen({
   controller,
   options,
   openEditor,
+  openSidebar,
   phoneLayoutProbe,
 }: PhoneWorkspaceStateViewProps) {
   const { styles } = useMobileStyles(createThemeStyles)
@@ -30,6 +31,7 @@ function PhoneNoteListScreen({
     <View {...probeProps(phoneLayoutProbe, 'phone.list.screen')} style={styles.screen} testID="phone-note-list-screen">
       <MobileNoteListPanel
         compact
+        leading={<PhoneSidebarButton onOpenSidebar={openSidebar} />}
         onToggleNoteFavorite={controller.onToggleNoteFavorite}
         bulkActions={phoneNoteListBulkActions(controller)}
         displayPropertyKeys={controller.noteListProperties}
@@ -97,6 +99,13 @@ function PhoneSidebarDrawer(props: PhoneWorkspaceStateViewProps) {
           onOpenCommandPalette={openCommandPalette}
         />
       </View>
+      <Pressable
+        accessibilityLabel={mobileText('sidebar.action.collapse')}
+        accessibilityRole="button"
+        style={styles.drawerScrim}
+        testID="phone-sidebar-scrim"
+        onPress={openList}
+      />
     </View>
   )
 }

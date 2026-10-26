@@ -9,6 +9,8 @@ const calls = vi.hoisted(() => ({ sidebar: vi.fn(), list: vi.fn(), properties: v
 vi.mock('react-native', () => ({
   View: ({ children, testID }: { children?: ReactNode; testID?: string }) =>
     createElement('div', { 'data-testid': testID }, children),
+  Pressable: ({ children, testID, onPress }: { children?: ReactNode; testID?: string; onPress?: () => void }) =>
+    createElement('button', { type: 'button', 'data-testid': testID, onClick: onPress }, children),
   StyleSheet: { create: (styles: object) => styles, hairlineWidth: 1 },
 }))
 vi.mock('../components/workspace/MobileNoteListPanel', () => ({ MobileNoteListPanel: (props: Record<string, unknown>) => {
@@ -23,12 +25,15 @@ vi.mock('../components/workspace/MobileWorkspaceSidebar', () => ({ MobileWorkspa
   calls.sidebar(props)
   return createElement('button', { type: 'button', 'data-testid': 'sidebar-command-palette-action', onClick: props.onOpenCommandPalette })
 } }))
-vi.mock('../ui/theme/useMobileTheme', () => ({ useMobileStyles: () => ({ styles: { screen: {}, drawerRoot: {}, drawerPanel: {} } }) }))
+vi.mock('../ui/theme/useMobileTheme', () => ({ useMobileStyles: () => ({ styles: { screen: {}, drawerRoot: {}, drawerPanel: {}, drawerScrim: {} } }) }))
 vi.mock('../workspace/mobileWorkspaceEmptyState', () => ({ mobileWorkspaceHasNoVault: () => false }))
 vi.mock('./usePhoneViewportWidth', () => ({ usePhoneViewportWidth: () => 390 }))
 vi.mock('./PhoneScreenLayer', () => ({ PhoneScreenLayer: ({ children }: { children?: ReactNode }) => children }))
 vi.mock('./PhoneWorkspaceChrome', () => ({
-  PhoneBackButton: () => null,
+  PhoneBackButton: ({ onBack }: { onBack?: () => void }) =>
+    createElement('button', { type: 'button', 'data-testid': 'phone-back-action', onClick: onBack }),
+  PhoneSidebarButton: ({ onOpenSidebar }: { onOpenSidebar?: () => void }) =>
+    createElement('button', { type: 'button', 'data-testid': 'phone-sidebar-action', onClick: onOpenSidebar }),
   PhoneTopBar: ({ children }: { children?: ReactNode }) => createElement('header', null, children),
 }))
 vi.mock('./TabletEditorPanel', () => ({ TabletEditorPanel: (props: Record<string, unknown>) => {
@@ -53,15 +58,37 @@ afterEach(async () => {
   vi.unstubAllGlobals()
 })
 
-it('keeps command palette access in the sidebar and removes it from phone headers', async () => {
-  await act(async () => root.render(createElement(PhoneWorkspaceScreens, createPhoneWorkspaceScreenProps(openCommandPalette))))
+it('provides native Android navigation controls: hamburger menu in list, back button in editor, and scrim in drawer', async () => {
+  const openSidebar = vi.fn()
+  const openList = vi.fn()
+  const props = {
+    ...createPhoneWorkspaceScreenProps(openCommandPalette),
+    openList,
+    openSidebar,
+  }
+  await act(async () => root.render(createElement(PhoneWorkspaceScreens, props)))
 
   expect(host.querySelector('[data-testid="sidebar-command-palette-action"]')).not.toBeNull()
   expect(calls.sidebar.mock.lastCall?.[0].onOpenCommandPalette).toBe(openCommandPalette)
   await act(async () => host.querySelector<HTMLButtonElement>('[data-testid="sidebar-command-palette-action"]')?.click())
   expect(openCommandPalette).toHaveBeenCalledOnce()
-  expect(calls.list.mock.lastCall?.[0].leading).toBeUndefined()
+
+  // Leading hamburger button in note list
+  expect(calls.list.mock.lastCall?.[0].leading).toBeDefined()
+  const sidebarBtn = host.querySelector<HTMLButtonElement>('[data-testid="phone-sidebar-action"]')
+  expect(sidebarBtn).not.toBeNull()
+  await act(async () => sidebarBtn?.click())
+  expect(openSidebar).toHaveBeenCalledOnce()
+
+  // Leading back button in editor
+  expect(calls.editor.mock.lastCall?.[0].leading).toBeDefined()
   expect(calls.editor.mock.lastCall?.[0].trailing).toBeUndefined()
+
+  // Scrim in sidebar drawer
+  const scrim = host.querySelector<HTMLButtonElement>('[data-testid="phone-sidebar-scrim"]')
+  expect(scrim).not.toBeNull()
+  await act(async () => scrim?.click())
+  expect(openList).toHaveBeenCalledOnce()
+
   expect(calls.properties).toHaveBeenCalledOnce()
-  expect(host.querySelectorAll('[aria-label="Command palette"]')).toHaveLength(0)
 })

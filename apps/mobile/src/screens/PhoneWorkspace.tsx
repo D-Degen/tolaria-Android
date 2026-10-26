@@ -18,6 +18,7 @@ import { phoneWorkspaceEditorOptions } from './phoneWorkspaceEditorOptions'
 import { usePhonePanelDragSurface, usePhoneWorkspaceNavigation, type PhoneWorkspaceController, type PhoneTableOfContentsTargetRequest } from './phoneWorkspaceScreenSupport'
 import { useTabletWorkspaceController } from './useTabletWorkspaceController'
 import { useInitialActionSheetQaTarget } from './useInitialActionSheetQaTarget'
+import { usePhoneWorkspaceBackHandler } from './usePhoneWorkspaceBackHandler'
 import type { MobileActionSheetQaTarget } from './tabletWorkspaceTypes'
 import type { PhoneWorkspaceState } from './phoneWorkspaceTransitions'
 
@@ -108,6 +109,18 @@ function PhoneWorkspaceChrome(props: PhoneWorkspaceChromeProps) {
     phoneState,
   })
   useMobileEditorOverlayFocus(phoneState !== 'editor' || Boolean(controller.openAction) || commandPalette.visible, editorCommandRegistry.commands)
+  usePhoneWorkspaceBackHandler({
+    clearSearch: () => controller.onSearchQueryChange(''),
+    closeAction: controller.onCloseAction,
+    closeCommandPalette: commandPalette.close,
+    commandPaletteVisible: commandPalette.visible,
+    goBack: controller.goBack,
+    navigation,
+    neighborhood: controller.noteListNeighborhood,
+    openAction: controller.openAction,
+    phoneState,
+    searchQuery: controller.searchQuery,
+  })
   useMobileWorkspaceKeyboardShortcuts({
     nativeNoteNavigationEnabled: phoneState === 'list' && !commandPalette.visible && !controller.openAction,
     onCreateNote: controller.onOpenCreateNote,
@@ -227,7 +240,7 @@ function usePhoneCommandPalette(props: UsePhoneCommandPaletteProps) {
     else openProperties()
   }, [openEditor, openProperties, phoneState])
   const commands = usePhonePaletteCommands(props, open, toggleProperties)
-  return { commands, element: visible ? <MobileCommandPalette commands={commands} onClose={close} /> : null, open, visible }
+  return { close, commands, element: visible ? <MobileCommandPalette commands={commands} onClose={close} /> : null, open, visible }
 }
 
 function usePhonePaletteCommands(props: UsePhoneCommandPaletteProps, open: () => void, toggleProperties: () => void) {

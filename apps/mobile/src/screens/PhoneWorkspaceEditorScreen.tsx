@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { type ReactNode, useCallback } from 'react'
 import { View } from 'react-native'
 import { probeProps } from '../qa/mobileLayoutProbe'
 import { useMobileStyles } from '../ui/theme/useMobileTheme'
@@ -7,12 +7,13 @@ import type { RegisterMobileEditorCommands } from '../workspace/mobileEditorComm
 import type { MobileNote } from '../workspace/mobileWorkspaceModel'
 import { TabletEditorPanel } from './TabletEditorPanel'
 import type { PhoneWorkspaceEditorOptions } from './phoneWorkspaceEditorOptions'
-import { PhoneTopBar } from './PhoneWorkspaceChrome'
+import { PhoneBackButton, PhoneTopBar } from './PhoneWorkspaceChrome'
 import { createThemeStyles } from './phoneWorkspaceStyles'
 import type { PhoneWorkspaceStateViewProps, PhoneWorkspaceController, PhoneTableOfContentsTargetRequest } from './phoneWorkspaceScreenSupport'
 
 type PhoneEditorBodyProps = {
   controller: PhoneWorkspaceController
+  leading?: ReactNode
   notes: MobileNote[]
   onNavigateWikilink: (target: string) => void
   onRegisterEditorCommands?: RegisterMobileEditorCommands
@@ -24,6 +25,7 @@ type PhoneEditorBodyProps = {
 function PhoneEditorBody(props: PhoneEditorBodyProps) {
   const {
     controller,
+    leading,
     notes,
     onNavigateWikilink,
     onRegisterEditorCommands,
@@ -42,6 +44,7 @@ function PhoneEditorBody(props: PhoneEditorBodyProps) {
       initialEditing={sourceModeRequested || options.initialEditorEditing}
       initialEditingMode={sourceModeRequested ? 'source' : options.initialEditorEditingMode}
       layoutProbe={options.layoutProbe}
+      leading={leading}
       note={controller.selectedNote}
       noteRead={controller.selectedNoteRead}
       notes={notes}
@@ -107,6 +110,7 @@ export function PhoneEditorScreen(props: PhoneWorkspaceStateViewProps) {
       {!controller.selectedNote && <PhoneTopBar title="" onBack={openList} />}
       <PhoneEditorBody
         controller={controller}
+        leading={<PhoneBackButton onBack={openList} />}
         notes={suggestionNotes}
         onNavigateWikilink={handleNavigateWikilink}
         onRegisterEditorCommands={onRegisterEditorCommands}

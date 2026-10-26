@@ -51,7 +51,9 @@ export function phoneRailSettleState(settlement: PhoneRailSettlement) {
 // Initialize helpers before dependent worklets capture them at module load.
 const phoneRailEditorOwnsTouch = (geometry: PhoneRailGeometry, bounds: PhoneRailBounds, movement: Movement) => {
   'worklet'
-  return bounds.origin === 'editor' && movement.x > 24 && movement.x < geometry.width - 24;
+  if (bounds.origin !== 'editor') return false
+  if (movement.y <= 56) return false
+  return movement.x > 24 && movement.x < geometry.width - 24;
 }
 
 const phoneRailAxisIntent = (movement: Movement): PhoneRailIntent => {

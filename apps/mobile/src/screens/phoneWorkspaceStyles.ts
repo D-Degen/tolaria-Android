@@ -3,8 +3,9 @@ import type { MobileMetrics } from '../ui/mobileMetrics'
 import type { MobileColors } from '../ui/theme/mobilePalette'
 
 const fixedStyles = StyleSheet.create({
-  drawerPanel: { flex: 1, borderRightWidth: StyleSheet.hairlineWidth },
-  drawerRoot: { flex: 1, overflow: 'hidden' },
+  drawerPanel: { height: '100%', borderRightWidth: StyleSheet.hairlineWidth },
+  drawerRoot: { flex: 1, overflow: 'hidden', flexDirection: 'row' },
+  drawerScrim: { flex: 1, height: '100%' },
   root: { flex: 1, overflow: 'hidden' },
   leadingActions: { alignItems: 'center', flexDirection: 'row' },
   screen: { flex: 1 },
@@ -26,6 +27,7 @@ export function createThemeStyles(mobileColors: MobileColors, metrics: MobileMet
       borderRightColor: mobileColors.border,
     },
     drawerRoot: { ...fixedStyles.drawerRoot, backgroundColor: mobileColors.sidebar },
+    drawerScrim: { ...fixedStyles.drawerScrim, backgroundColor: 'rgba(0, 0, 0, 0.4)' },
     root: { ...fixedStyles.root, backgroundColor: mobileColors.app },
     leadingActions: { ...fixedStyles.leadingActions, gap: metrics.space.xs },
     screen: { ...fixedStyles.screen, backgroundColor: mobileColors.app },
