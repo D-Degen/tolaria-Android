@@ -115,3 +115,16 @@ it('never publishes pre-recovery content when the repository repairs pending wri
   expect(actual.notes[0].rawContent).toBe('# Recovered\n')
   expect(takePreparedWorkspaceSnapshot(f.index, f.options)).toBeNull()
 })
+
+it('populates index via readIndex when candidate has no preloaded index (Android fallback)', async () => {
+  const f = fixture()
+  const unindexedSelection = { ...f.selection, index: undefined }
+  const readVaultConfig = vi.fn(() => f.options.vaultConfig)
+  const preload = vi.fn(async () => unindexedSelection)
+  const readIndex = vi.fn(() => f.index)
+  const selected = await prepareNativeWorkspace(unindexedSelection, undefined, { preload, readVaultConfig, readIndex })
+  expect(readIndex).toHaveBeenCalledWith(unindexedSelection.vaultRootUri)
+  expect(selected?.index).toEqual(f.index)
+  const prepared = takePreparedWorkspaceSnapshot(f.index, f.options)
+  expect(prepared).toEqual(f.snapshot)
+})
