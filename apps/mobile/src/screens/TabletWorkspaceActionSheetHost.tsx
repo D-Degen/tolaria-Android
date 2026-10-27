@@ -168,6 +168,7 @@ function actionSheetNoteHandlers(props: ActionSheetHostProps) {
     onSetOrganized: props.onSetOrganized,
     onToggleFavorite: props.onToggleFavorite,
     onToggleNoteWidth: props.onToggleNoteWidth,
+    onToggleRawEditor: props.editorCommands?.toggleRawEditor,
     onUpdateNoteContent: props.onUpdateNoteContent,
   }
 }

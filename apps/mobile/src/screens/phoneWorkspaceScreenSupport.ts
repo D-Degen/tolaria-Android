@@ -1,4 +1,5 @@
 import { useCallback, type Dispatch, type SetStateAction } from 'react'
+import { isDiscardableEmptyDraft } from '../workspace/mobileDraftCleanup'
 import { useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { MobileLayoutProbe } from '../qa/mobileLayoutProbe'
@@ -31,7 +32,12 @@ type NavigationOptions = {
 }
 
 export function usePhoneWorkspaceNavigation({ controller, setPhoneState, setSourceModeRequest }: NavigationOptions) {
-  const openList = useCallback(() => setPhoneState('list'), [setPhoneState])
+  const openList = useCallback(() => {
+    if (isDiscardableEmptyDraft(controller.selectedNote)) {
+      controller.onDeleteNote()
+    }
+    setPhoneState('list')
+  }, [controller, setPhoneState])
   const openSidebar = useCallback(() => setPhoneState('sidebar'), [setPhoneState])
   const openProperties = useCallback(() => setPhoneState('properties'), [setPhoneState])
   const openEditor = useCallback((noteId?: string) => {

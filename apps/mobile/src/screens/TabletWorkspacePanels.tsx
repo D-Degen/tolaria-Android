@@ -50,6 +50,7 @@ type TabletEditorPanelHostProps = Pick<
   | 'initialEditorEditing'
   | 'initialEditorEditingMode'
   | 'layoutProbe'
+  | 'onOpenChangeNoteType'
   | 'onOpenMoreActions'
   | 'onFilenameStemChange'
   | 'onRenameNoteFile'
@@ -238,6 +239,7 @@ function tabletEditorPanelProps(props: TabletEditorPanelHostProps): ComponentPro
     noteRead: props.selectedNoteRead,
     notes: props.suggestionNotes,
     onNavigateWikilink: props.onNavigateWikilink,
+    onOpenChangeNoteType: props.onOpenChangeNoteType,
     onOpenMoreActions: props.onOpenMoreActions,
     onOpenTableOfContents: props.onOpenTableOfContents,
     onRegisterEditorCommands: props.onRegisterEditorCommands,

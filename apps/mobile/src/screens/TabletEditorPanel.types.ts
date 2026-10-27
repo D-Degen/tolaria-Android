@@ -31,6 +31,7 @@ export type TabletEditorPanelProps = {
   noteRead?: MobileNoteReadState
   notes: MobileNote[]
   onNavigateWikilink: (target: string) => void
+  onOpenChangeNoteType?: () => void
   onOpenMoreActions: () => void
   onOpenTableOfContents?: () => void
   onRegisterEditorCommands?: RegisterMobileEditorCommands
@@ -38,6 +39,7 @@ export type TabletEditorPanelProps = {
   onToggleProperties?: () => void
   onToggleFavorite: () => void
   onUpdateContent: (noteId: string, content: string) => void
+  onUpdateTitle?: (noteId: string, title: string) => void
   propertiesVisible?: boolean
   renameFilename?: MobileFilenameRename
   sourceIdleSave?: boolean
@@ -57,12 +59,14 @@ export type TabletEditorPanelProps = {
 }
 
 export type EditorToolbarProps = {
+  compact?: boolean
   editing: boolean
   editingMode: EditorEditingMode
   fileMode: EditorFileMode
   leading?: ReactNode
   trailing?: ReactNode
   note: MobileNote
+  onOpenChangeNoteType?: () => void
   onOpenMoreActions: () => void
   onOpenTableOfContents?: () => void
   onToggleProperties?: () => void

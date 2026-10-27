@@ -257,11 +257,15 @@ function retargetNoteInputConfig(props: MobileWorkspaceActionSheetProps & { reta
       inputValue: props.noteType,
       onCancel: props.onClose,
       onChangeText: props.onChangeNoteTypeInputChange,
+      onSelect: (value: string) => {
+        props.onChangeNoteTypeInputChange(value)
+        props.onChangeNoteType()
+      },
       onSubmit: props.onChangeNoteType,
       submitLabel: mobileText('common.save'),
       suggestionTestId: 'workspace-change-type-suggestions',
       suggestionTestIdPrefix: 'workspace-change-type-suggestion',
-      suggestions: mobileTypeSuggestions(props.notes, props.selectedNote, props.noteType),
+      suggestions: mobileTypeSuggestions(props.notes, props.selectedNote, props.noteType, props.typeDefinitions),
     }
   }
 
@@ -298,7 +302,7 @@ function SuggestionInputActionContent({ config }: { config: SuggestionInputActio
         maxVisibleItems={mobileWorkspaceFormSheetMaxSuggestions}
         testID={config.suggestionTestId}
         testIDPrefix={config.suggestionTestIdPrefix}
-        onSelect={config.onChangeText}
+        onSelect={config.onSelect ?? config.onChangeText}
       />
       <SheetFooter>
         <MobileButton label={mobileText('common.cancel')} variant="ghost" onPress={config.onCancel} />

@@ -46,6 +46,7 @@ import {
 } from './TabletEditorPanelChrome'
 import { createEditorPanelStyles } from './TabletEditorPanelStyles'
 import { MobileEditorToolbar } from './MobileEditorToolbar'
+import { MobileNoteTitleField } from '../components/workspace/MobileNoteTitleField'
 import { useEditorModeSwitch } from './useEditorModeSwitch'
 
 export type { EditorEditingMode } from './TabletEditorPanel.types'
@@ -63,11 +64,14 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
     trailing,
     note,
     noteRead,
+    onOpenChangeNoteType,
     onOpenMoreActions,
     onOpenTableOfContents,
     onRegisterEditorCommands,
     onTableOfContentsScrollProof,
     onToggleFavorite,
+    onUpdateTitle,
+    renameFilename,
     tableOfContentsTarget = null,
     typeDefinitions,
     vaultRootUri = null,
@@ -91,6 +95,20 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
     toggleRawEditor: note && editorFileMode(note) === 'markdown' ? toggleSourceMode : undefined,
   })
 
+  const noteId = note?.id
+  const handleTitleSubmit = useCallback(
+    (newTitle: string) => {
+      if (!noteId) return
+      if (onUpdateTitle) {
+        onUpdateTitle(noteId, newTitle)
+      } else if (renameFilename) {
+        renameFilename.onChange(newTitle)
+        renameFilename.onSubmit()
+      }
+    },
+    [noteId, onUpdateTitle, renameFilename],
+  )
+
   if (!note) {
     return <EmptyEditorPanel />
   }
@@ -109,6 +127,11 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
     plainText,
   })
 
+  const isNewDraft =
+    note.title.startsWith('Untitled Note') ||
+    note.title.startsWith('Untitled ') ||
+    note.title === 'Untitled'
+
   return (
     <MobilePanel
       {...layoutProbe.probe('editor.panel')}
@@ -116,19 +139,29 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
       testID="editor-panel"
     >
       <MobileEditorToolbar
+        compact={compact}
         editingMode={effectiveEditingMode}
         editing={effectiveEditing}
         fileMode={fileMode}
         leading={leading}
         trailing={trailing}
         note={note}
-        renameFilename={props.renameFilename}
+        renameFilename={renameFilename}
+        onOpenChangeNoteType={onOpenChangeNoteType}
         onOpenMoreActions={onOpenMoreActions}
         onOpenTableOfContents={onOpenTableOfContents}
         onToggleSourceMode={toggleSourceMode}
         onToggleFavorite={onToggleFavorite}
         typeDefinitions={typeDefinitions}
       />
+      {fileMode === 'markdown' && effectiveEditing ? (
+        <MobileNoteTitleField
+          autoFocus={isNewDraft}
+          initialTitle={note.title}
+          noteId={note.id}
+          onSubmitTitle={handleTitleSubmit}
+        />
+      ) : null}
       <EditorModeFailure failed={modeSwitchFailed} />
       <EditorPanelBody
         compact={compact}

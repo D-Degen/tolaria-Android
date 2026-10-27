@@ -75,8 +75,8 @@ it('catches a keyboard that finishes appearing after the editor mounts', async (
   expect(padding(host)).toBe(0)
 })
 
-it.each(['android', 'web'])('leaves keyboard sizing to the platform on %s', async os => {
-  native.os = os
+it('leaves keyboard sizing to the platform on web', async () => {
+  native.os = 'web'
   const host = await mount()
   expect(padding(host)).toBe(0)
   expect(native.listeners.size).toBe(0)

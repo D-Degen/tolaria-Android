@@ -33,20 +33,35 @@ export function MobileKeyboardAvoidingView({ children, onLayout, ...props }: Vie
 
 /** Cover both an already visible keyboard and events racing the editor's mount. */
 function useIosKeyboardFrame() {
-  const [keyboard, setKeyboard] = useState(() => Platform.OS === 'ios' ? Keyboard.metrics() : undefined)
+  const [keyboard, setKeyboard] = useState(() => (Platform.OS !== 'web' ? Keyboard.metrics() : undefined))
   useEffect(() => {
-    if (Platform.OS !== 'ios') return
+    if (Platform.OS === 'web') return
     const show = (event: KeyboardEvent) => {
-      Keyboard.scheduleLayoutAnimation(event)
+      try {
+        Keyboard.scheduleLayoutAnimation(event)
+      } catch {
+        // Fallback if layout animation is unsupported
+      }
       setKeyboard(event.endCoordinates)
     }
     const hide = (event: KeyboardEvent) => {
-      Keyboard.scheduleLayoutAnimation(event)
+      try {
+        Keyboard.scheduleLayoutAnimation(event)
+      } catch {
+        // Fallback
+      }
       setKeyboard(undefined)
     }
-    const listeners = [Keyboard.addListener('keyboardWillChangeFrame', show), Keyboard.addListener('keyboardDidShow', show),
-      Keyboard.addListener('keyboardWillShow', show), Keyboard.addListener('keyboardWillHide', hide)]
-    return () => { for (const listener of listeners) listener.remove() }
+    const listeners = [
+      Keyboard.addListener('keyboardWillChangeFrame', show),
+      Keyboard.addListener('keyboardDidShow', show),
+      Keyboard.addListener('keyboardWillShow', show),
+      Keyboard.addListener('keyboardDidHide', hide),
+      Keyboard.addListener('keyboardWillHide', hide),
+    ]
+    return () => {
+      for (const listener of listeners) listener.remove()
+    }
   }, [])
   return keyboard
 }

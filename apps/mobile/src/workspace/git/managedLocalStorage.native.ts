@@ -27,8 +27,8 @@ async function initialStarterVaults(): Promise<ManagedLocalVault[]> {
     const starter = await prepareBundledStarterVault()
     return starter ? [starter] : []
   } catch (error) {
-    logDiagnostic('warn', 'starterVault', 'Could not prepare starter vault, skipping', error)
-    return []
+    logDiagnostic('warn', 'starterVault', 'Could not prepare starter vault', error)
+    throw error
   }
 }
 

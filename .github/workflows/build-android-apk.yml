@@ -67,7 +67,7 @@ jobs:
       - name: Prepare Named Release APK
         run: |
           mkdir -p release-dist
-          cp apps/mobile/android/app/build/outputs/apk/release/*.apk release-dist/Tolaria-v0.2.2-Pixel10.apk
+          cp apps/mobile/android/app/build/outputs/apk/release/*.apk release-dist/Tolaria-v0.2.3-Pixel10.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -81,16 +81,17 @@ jobs:
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v0.2.2-pixel10
-          name: Tolaria Mobile v0.2.2 (Pixel 10)
+          tag_name: v0.2.3-pixel10
+          name: Tolaria Mobile v0.2.3 (Pixel 10)
           body: |
-            ### Tolaria Mobile v0.2.2 (Google Pixel 10)
-            - **Vault-Persistenz & Stabilität:** Automatischer Fallback auf vorhandene Vaults, verhindert das Verschwinden des Vaults nach Hintergrundintervallen oder Kaltstart
-            - **Auto-Sync-Härtung:** Hintergrundaktualisierungen blockieren nicht mehr die Workspace-Anzeige
-            - **Diagnose- & Fehlerbericht-Export:** Exportierbare Diagnose- und Systemberichte direkt in die Zwischenablage (in den Einstellungen und im Fehlerbildschirm)
-            - **Starter-Vault-Sicherheit:** Zuverlässige Initialisierung bei bereits vorhandenen Git-Vaults
-            - **Direkter APK-Download:** Datei direkt auf dem Pixel 10 herunterladen und installieren
-          files: release-dist/Tolaria-v0.2.2-Pixel10.apk
+            ### Tolaria Mobile v0.2.3 (Google Pixel 10)
+            - **Sofortige Tastatur beim Erstellen:** Beim Klick auf '+' öffnet sich die Tastatur sofort fokussiert im Titelfeld
+            - **Formatleiste über Tastatur:** Formatleiste gleitet auf Android nahtlos und synchron über die Tastatur
+            - **Titel-Synchronisation:** Nach Eingabe des Titels wird die Notiz automatisch zum Titel umbenannt
+            - **Notiztyp-Auswahl:** Schnellauswahl des Notiztyps direkt oben rechts neben dem Favoriten-Stern sowie über die Notizeigenschaften
+            - **Raw-Modus im Menü:** Raw-Editor ins Mehr-Aktionen-Menü ('...') verschoben
+            - **Entwurf-Bereinigung:** Leere Notizen ohne Titel werden beim Verlassen automatisch verworfen
+          files: release-dist/Tolaria-v0.2.3-Pixel10.apk
           prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

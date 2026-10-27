@@ -49,10 +49,16 @@ function PhoneEditorBody(props: PhoneEditorBodyProps) {
       noteRead={controller.selectedNoteRead}
       notes={notes}
       onNavigateWikilink={onNavigateWikilink}
+      onOpenChangeNoteType={controller.onOpenChangeNoteType}
       onOpenMoreActions={controller.onOpenMoreActions}
       onRegisterEditorCommands={onRegisterEditorCommands}
       onToggleFavorite={controller.onToggleFavorite}
       onUpdateContent={controller.onUpdateNoteContent}
+      onUpdateTitle={(noteId, title) => {
+        controller.onEditProperty(noteId, 'title', title)
+        controller.onFilenameStemChange(title)
+        controller.onRenameNoteFile()
+      }}
       renameFilename={{ value: controller.readOnlyForm.filenameStem, notes,
         onChange: controller.onFilenameStemChange, onSubmit: controller.onRenameNoteFile }}
       sourceIdleSave={options.sourceIdleSave}

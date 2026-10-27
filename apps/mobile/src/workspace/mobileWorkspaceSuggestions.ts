@@ -117,9 +117,12 @@ export function mobileTypeSuggestions(
   notes: MobileNote[],
   selectedNote: MobileNote | null,
   query: SuggestionQuery,
+  typeDefinitions?: MobileTypeDefinitions,
 ): string[] {
   const currentType = selectedNote?.type.trim().toLowerCase()
-  return visibleSuggestions(notes.map((note) => note.type), query)
+  const definedTypes = typeDefinitions ? Object.keys(typeDefinitions) : []
+  const allTypes = [...definedTypes, ...notes.map((note) => note.type)]
+  return visibleSuggestions(allTypes, query)
     .filter((type) => type.toLowerCase() !== currentType)
 }
 

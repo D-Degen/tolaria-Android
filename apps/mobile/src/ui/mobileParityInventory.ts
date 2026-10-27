@@ -277,6 +277,13 @@ export const mobileParityInventory = [
     surface: 'Note more actions',
   },
 {
+    assertions: ['note title field autofocus, rename, and discard flow checks'],
+    contracts: ['desktopPanelParity', 'desktopToolbarActionParity'],
+    desktopSource: 'Desktop note title editing in header and editor document top',
+    mobileFile: 'src/components/workspace/MobileNoteTitleField.tsx',
+    surface: 'Note title field',
+  },
+{
     assertions: ['source-backed code, code-fence metadata, math, Mermaid, leading-space source indentation, and code-indented fence exclusion edit checks'],
     contracts: ['desktopEditorParity', 'desktopToolbarActionParity'],
     desktopSource: 'BlockNote code blocks, math markdown, Mermaid fences, and editor command actions',

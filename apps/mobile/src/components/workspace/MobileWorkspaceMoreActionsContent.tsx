@@ -3,7 +3,7 @@ import { useMobileStyles } from '../../ui/theme/useMobileTheme'
 import type { MobileColors } from '../../ui/theme/mobilePalette'
 import { useState, type ReactNode } from 'react'
 import { ScrollView, StyleSheet, View } from 'react-native'
-import { FilePlus, LinkSimple, ListBullets, Star } from 'phosphor-react-native'
+import { Code, FilePlus, LinkSimple, ListBullets, Star } from 'phosphor-react-native'
 import { Text } from '../ui/text'
 import { Button } from '../ui/button'
 import { mobileText } from '../../i18n/mobileText'
@@ -131,6 +131,17 @@ function MarkdownNoteMoreActionRows({
   />
   return (
     <>
+      {props.onToggleRawEditor ? (
+        <MoreActionRow
+          icon={<Code color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
+          label={mobileText('editor.toolbar.rawOpen')}
+          testID="editor-source-action"
+          onPress={() => {
+            props.onToggleRawEditor?.()
+            props.onClose()
+          }}
+        />
+      ) : null}
       {!phone ? <MoreActionRow
         icon={<ListBullets color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
         label={mobileText('tableOfContents.title')}

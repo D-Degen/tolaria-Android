@@ -127,6 +127,7 @@ export type MobileWorkspaceActionSheetProps = {
   onSetOrganized: (organized: boolean) => void
   onToggleFavorite: () => void
   onToggleNoteWidth: () => void
+  onToggleRawEditor?: () => void
   onToggleTypeVisibility: (typeName: string) => void
   onUndoWorkspaceEdit: () => void
   onUpdateNoteContent: (noteId: string, content: string) => void
@@ -205,6 +206,7 @@ export type SingleTextFieldConfig = {
   inputValue: string
   onCancel: () => void
   onChangeText: (value: string) => void
+  onSelect?: (value: string) => void
   onSubmit: () => void
   submitLabel: string
   secondaryAction?: ReactNode
@@ -218,6 +220,7 @@ export type SuggestionInputActionConfig = {
   inputValue: string
   onCancel: () => void
   onChangeText: (value: string) => void
+  onSelect?: (value: string) => void
   onSubmit: () => void
   submitLabel: string
   submitDisabled?: boolean

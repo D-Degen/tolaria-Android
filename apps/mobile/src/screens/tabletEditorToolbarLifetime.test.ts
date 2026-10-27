@@ -15,6 +15,7 @@ function Control({ children, testID, onPress }: SurfaceProps & { onPress?: () =>
   return createElement('button', { type: 'button', onClick: onPress, 'data-testid': testID }, children)
 }
 vi.mock('react-native', () => ({ View: Surface, ScrollView: Surface,
+  TextInput: ({ testID, ...props }: { testID?: string; [key: string]: unknown }) => createElement('input', { 'data-testid': testID, ...props }),
   StyleSheet: { create: (value: object) => value, flatten: (value: object) => value, hairlineWidth: 0.5 } }))
 vi.mock('../ui/theme/useMobileTheme', async () => {
   const { mobileMetrics } = await import('../ui/mobileMetrics')
