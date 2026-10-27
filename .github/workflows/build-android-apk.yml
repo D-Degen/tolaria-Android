@@ -67,7 +67,7 @@ jobs:
       - name: Prepare Named Release APK
         run: |
           mkdir -p release-dist
-          cp apps/mobile/android/app/build/outputs/apk/release/*.apk release-dist/Tolaria-v0.2.3-Pixel10.apk
+          cp apps/mobile/android/app/build/outputs/apk/release/*.apk release-dist/Tolaria-v0.2.4-Pixel10.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -81,17 +81,14 @@ jobs:
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v0.2.3-pixel10
-          name: Tolaria Mobile v0.2.3 (Pixel 10)
+          tag_name: v0.2.4-pixel10
+          name: Tolaria Mobile v0.2.4 (Pixel 10)
           body: |
-            ### Tolaria Mobile v0.2.3 (Google Pixel 10)
-            - **Sofortige Tastatur beim Erstellen:** Beim Klick auf '+' öffnet sich die Tastatur sofort fokussiert im Titelfeld
-            - **Formatleiste über Tastatur:** Formatleiste gleitet auf Android nahtlos und synchron über die Tastatur
-            - **Titel-Synchronisation:** Nach Eingabe des Titels wird die Notiz automatisch zum Titel umbenannt
-            - **Notiztyp-Auswahl:** Schnellauswahl des Notiztyps direkt oben rechts neben dem Favoriten-Stern sowie über die Notizeigenschaften
-            - **Raw-Modus im Menü:** Raw-Editor ins Mehr-Aktionen-Menü ('...') verschoben
-            - **Entwurf-Bereinigung:** Leere Notizen ohne Titel werden beim Verlassen automatisch verworfen
-          files: release-dist/Tolaria-v0.2.3-Pixel10.apk
+            ### Tolaria Mobile v0.2.4 (Google Pixel 10)
+            - **Typ-Auswahlliste mit Icon und Farbcode:** Reines Listen-Sheet aller vorhandenen Notiztypen mit Symbol und Farb-Badge – ohne Texteingabe und ohne Suchfeld. Klick übernimmt den Typ sofort.
+            - **Automatisches Umbenennen des Dateinamens:** Kein separates, doppeltes Titelfeld mehr. Der Dateiname wird direkt anhand der ersten Eingabe im Dokument automatisch aktualisiert.
+            - **Bereinigung generischer Entwürfe:** Notizen mit generischem Titel (wie "Untitled Note...", "Untiteld Note...") ohne Inhalt werden beim Zurückgehen automatisch verworfen und hinterlassen keine Dateileichen.
+          files: release-dist/Tolaria-v0.2.4-Pixel10.apk
           prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

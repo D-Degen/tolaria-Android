@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { isDiscardableEmptyDraft } from "./mobileDraftCleanup";
+import {
+	extractFirstTitleFromMarkdown,
+	isDiscardableEmptyDraft,
+	isGenericDraftTitle,
+} from "./mobileDraftCleanup";
 import type { MobileNote } from "./mobileWorkspaceModel";
 
 function createTestNote(overrides: Partial<MobileNote> = {}): MobileNote {
@@ -25,6 +29,44 @@ function createTestNote(overrides: Partial<MobileNote> = {}): MobileNote {
 	};
 }
 
+describe("isGenericDraftTitle", () => {
+	it("detects various generic titles and ids", () => {
+		expect(isGenericDraftTitle("")).toBe(true);
+		expect(isGenericDraftTitle("Untitled")).toBe(true);
+		expect(isGenericDraftTitle("Untitled Note 1730058123")).toBe(true);
+		expect(isGenericDraftTitle("Untiteld Note...")).toBe(true);
+		expect(
+			isGenericDraftTitle("untitled-note-999", "untitled-note-999.md"),
+		).toBe(true);
+		expect(isGenericDraftTitle("Weekly Review")).toBe(false);
+		expect(isGenericDraftTitle("Mein Projekt")).toBe(false);
+	});
+});
+
+describe("extractFirstTitleFromMarkdown", () => {
+	it("extracts non-generic H1 heading", () => {
+		const md = "---\ntype: Note\n---\n\n# Einkaufsliste\n\nMilch kaufen";
+		expect(extractFirstTitleFromMarkdown(md)).toBe("Einkaufsliste");
+	});
+
+	it("ignores generic H1 heading", () => {
+		const md = "---\ntype: Note\n---\n\n# Untitled Note 12345\n\n";
+		expect(extractFirstTitleFromMarkdown(md)).toBeNull();
+	});
+
+	it("extracts first non-empty line if no H1 exists", () => {
+		const md = "---\ntype: Note\n---\n\nMeeting Notizen\n\nTeilnehmer: Anna";
+		expect(extractFirstTitleFromMarkdown(md)).toBe("Meeting Notizen");
+	});
+
+	it("returns null for empty content or only empty heading", () => {
+		expect(
+			extractFirstTitleFromMarkdown("---\ntype: Note\n---\n\n# \n\n"),
+		).toBeNull();
+		expect(extractFirstTitleFromMarkdown("")).toBeNull();
+	});
+});
+
 describe("isDiscardableEmptyDraft", () => {
 	it("returns false for null or undefined note", () => {
 		expect(isDiscardableEmptyDraft(null)).toBe(false);
@@ -34,8 +76,26 @@ describe("isDiscardableEmptyDraft", () => {
 	it("returns true when note has default untitled title and empty content", () => {
 		const note = createTestNote({
 			id: "untitled-note-12345.md",
-			title: "Untitled Note 12345",
 			rawContent: "---\ntype: Note\n---\n",
+			title: "Untitled Note 12345",
+		});
+		expect(isDiscardableEmptyDraft(note)).toBe(true);
+	});
+
+	it("returns true when note has initial template with empty heading", () => {
+		const note = createTestNote({
+			id: "untitled-note-1740000000.md",
+			rawContent: "---\ntype: Note\n---\n\n# \n\n",
+			title: "Untitled Note 1740000000",
+		});
+		expect(isDiscardableEmptyDraft(note)).toBe(true);
+	});
+
+	it('returns true when note has typo generic title "Untiteld Note..." and empty content', () => {
+		const note = createTestNote({
+			id: "untitled-note-999.md",
+			rawContent: "---\ntype: Note\n---\n\n# \n\n",
+			title: "Untiteld Note...",
 		});
 		expect(isDiscardableEmptyDraft(note)).toBe(true);
 	});
@@ -43,8 +103,8 @@ describe("isDiscardableEmptyDraft", () => {
 	it("returns true when note has completely empty rawContent and empty title", () => {
 		const note = createTestNote({
 			id: "untitled-note-999.md",
-			title: "",
 			rawContent: "",
+			title: "",
 		});
 		expect(isDiscardableEmptyDraft(note)).toBe(true);
 	});
@@ -52,8 +112,8 @@ describe("isDiscardableEmptyDraft", () => {
 	it("returns false when note has user-assigned title", () => {
 		const note = createTestNote({
 			id: "untitled-note-12345.md",
-			title: "My Project Plan",
 			rawContent: "---\ntype: Note\n---\n",
+			title: "My Project Plan",
 		});
 		expect(isDiscardableEmptyDraft(note)).toBe(false);
 	});
@@ -61,8 +121,17 @@ describe("isDiscardableEmptyDraft", () => {
 	it("returns false when note has user-written body content", () => {
 		const note = createTestNote({
 			id: "untitled-note-12345.md",
-			title: "Untitled Note 12345",
 			rawContent: "---\ntype: Note\n---\nHello world note text",
+			title: "Untitled Note 12345",
+		});
+		expect(isDiscardableEmptyDraft(note)).toBe(false);
+	});
+
+	it("returns false when note has user-written heading", () => {
+		const note = createTestNote({
+			id: "untitled-note-12345.md",
+			rawContent: "---\ntype: Note\n---\n\n# Meine neue Notiz\n\n",
+			title: "Untitled Note 12345",
 		});
 		expect(isDiscardableEmptyDraft(note)).toBe(false);
 	});
