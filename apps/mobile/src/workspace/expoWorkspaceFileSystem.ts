@@ -180,7 +180,14 @@ function readDirectoryPaths(
 function localVaultFile(file: File, relativePath: RelativeVaultPath): LocalVaultFile {
   const info = file.info()
   const fileKind = mobileFileKindForPath(relativePath)
-  const content = fileKind === 'binary' ? '' : file.textSync()
+  let content = ''
+  if (fileKind !== 'binary') {
+    try {
+      content = file.textSync()
+    } catch {
+      content = ''
+    }
+  }
 
   return {
     absolutePath: file.uri,

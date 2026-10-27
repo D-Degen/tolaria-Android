@@ -64,10 +64,32 @@ jobs:
         # Pixel 10 utilizes arm64-v8a architecture; disable release lint tasks to skip 3rd-party library lint issues
         run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a -x lint -x lintVitalRelease -x lintVitalAnalyzeRelease --stacktrace
 
+      - name: Prepare Named Release APK
+        run: |
+          mkdir -p release-dist
+          cp apps/mobile/android/app/build/outputs/apk/release/*.apk release-dist/Tolaria-v0.2.1-Pixel10.apk
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: Tolaria-Pixel10-Release-APK
-          path: apps/mobile/android/app/build/outputs/apk/release/*.apk
+          path: release-dist/*.apk
           retention-days: 14
           if-no-files-found: error
+
+      - name: Create or Update GitHub Pre-Release
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
+        if: github.ref == 'refs/heads/main'
+        with:
+          tag_name: v0.2.1-pixel10
+          name: Tolaria Mobile v0.2.1 (Pixel 10)
+          body: |
+            ### Tolaria Mobile v0.2.1 (Google Pixel 10)
+            - **Android 11+ Navigation:** Hardware-Back-Gestenunterstützung und Zurück-Buttons
+            - **Soft-Keyboard-Layout:** `softwareKeyboardLayoutMode: resize` für unterbrechungsfreies Tippen im Editor
+            - **Dateisystem-Härtung:** Sicherer Vault-Preload mit Fehlerbehandlung gegen ANR
+            - **Direkter APK-Download:** Keine ZIP-Datei erforderlich – Datei direkt auf dem Pixel 10 antippen
+          files: release-dist/Tolaria-v0.2.1-Pixel10.apk
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
