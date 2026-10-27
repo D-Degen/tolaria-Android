@@ -3,10 +3,15 @@ import { randomUUID } from 'expo-crypto'
 import { restoreNativeWorkspaceDirectory, type NativeWorkspaceSelection } from '../nativeWorkspacePicker'
 import { readManagedGitCatalog, updateManagedGitCatalog } from './managedGitStorage.native'
 import { isManagedLocalDirectory, type ManagedLocalVault } from './managedLocalVaults'
+import { logDiagnostic } from '../../diagnostics/mobileDiagnostics'
 
 export async function initializeLocalVaultCatalog() {
+  logDiagnostic('info', 'catalog', 'Initializing local vault catalog...')
   const catalog = await readManagedGitCatalog()
-  if (catalog.localVaults !== undefined) return catalog
+  if (catalog.localVaults !== undefined) {
+    logDiagnostic('info', 'catalog', `Catalog already initialized. Active Git: ${catalog.activeId ?? 'none'}, Active Local: ${catalog.activeLocalId ?? 'none'}`)
+    return catalog
+  }
   const legacy = await restoreNativeWorkspaceDirectory()
   const localVaults = legacy
     ? [{ id: 'local-legacy', label: legacy.vaultLabel, directory: 'Tolaria Vault' }]
@@ -17,9 +22,14 @@ export async function initializeLocalVaultCatalog() {
 }
 
 async function initialStarterVaults(): Promise<ManagedLocalVault[]> {
-  const { prepareBundledStarterVault } = await import('./bundledStarterVault.native')
-  const starter = await prepareBundledStarterVault()
-  return starter ? [starter] : []
+  try {
+    const { prepareBundledStarterVault } = await import('./bundledStarterVault.native')
+    const starter = await prepareBundledStarterVault()
+    return starter ? [starter] : []
+  } catch (error) {
+    logDiagnostic('warn', 'starterVault', 'Could not prepare starter vault, skipping', error)
+    return []
+  }
 }
 
 export async function rememberLocalVault(selection: NativeWorkspaceSelection): Promise<ManagedLocalVault> {

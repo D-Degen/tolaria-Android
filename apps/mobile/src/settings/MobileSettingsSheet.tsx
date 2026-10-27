@@ -12,6 +12,7 @@ import { mobileText } from '../i18n/mobileText'
 import { useMobileSettings } from './useMobileSettings'
 import { MobileAppearanceSettings } from './MobileAppearanceSettings'
 import { MobilePrivacySettings } from './MobilePrivacySettings'
+import { MobileDiagnosticsSettings } from './MobileDiagnosticsSettings'
 import { MobileUpdateSettings } from './MobileUpdateSettings'
 import { useMobileUpdateChannel } from './useMobileUpdateChannel'
 import { MobileVaultManager } from '../components/vaults/MobileVaultManager'
@@ -42,6 +43,7 @@ export function MobileSettingsSheet({ manager }: { manager: ReturnType<typeof us
           <MobileAppearanceSettings />
           <MobileUpdateSettings updates={updates} />
           <MobilePrivacySettings />
+          <MobileDiagnosticsSettings />
           </>}
         </ScrollView>
       </MobilePanel>

@@ -7,6 +7,7 @@ import type { NativeWorkspaceSelection } from '../nativeWorkspacePicker'
 import { prepareNativeWorkspace } from '../prepareNativeWorkspace'
 import { readNativeWorkspaceStartupPreview } from '../nativeWorkspaceStartupPreview'
 import type { WorkspaceSnapshotPreview } from '../workspaceSnapshotPreview'
+import { logDiagnostic } from '../../diagnostics/mobileDiagnostics'
 
 export type ActiveVault = { selection: NativeWorkspaceSelection | null; git: ManagedGitVault | null }
 
@@ -53,10 +54,12 @@ function restoreCatalogState(update: UpdateCatalog) {
   let stage: 'catalog' | 'selection' = 'catalog'
   void initializeLocalVaultCatalog().then(async catalog => {
     if (!active) return
+    logDiagnostic('info', 'catalog', `Initializing catalog. Found ${catalog.vaults.length} git vaults, ${catalog.localVaults?.length ?? 0} local vaults`)
     update(previous => ({ ...previous, ...catalogLists(catalog) }))
     stage = 'selection'
     const restored = await restoreCatalogSelection(catalog)
     if (!active) return
+    logDiagnostic('info', 'catalog', `Selected vault: ${restored.selection?.vaultLabel ?? 'none'} (${restored.selection?.vaultRootUri ?? 'none'})`)
     // Existing binaries share one Expo async queue: cache IO must precede indexing.
     const preview = await readNativeWorkspaceStartupPreview(restored.selection, cancellation.signal, undefined, true).catch(() => null)
     if (!active) return
@@ -67,7 +70,8 @@ function restoreCatalogState(update: UpdateCatalog) {
       update(previous => ({ ...previous,
         restored: { ...restored, selection: selectedAfterPreparation(selection, previous.preview) }, preview: null }))
     }
-  }).then(() => finishCatalogRestoration(active, update), () => {
+  }).then(() => finishCatalogRestoration(active, update), (error) => {
+    logDiagnostic('error', 'catalog', `Catalog restoration failed at stage ${stage}`, error)
     cancellation.abort()
     finishCatalogRestoration(active, update, stage)
   })
@@ -86,5 +90,19 @@ async function restoreCatalogSelection(catalog: ManagedGitVaultCatalog): Promise
   const git = catalog.vaults.find(vault => vault.id === catalog.activeId)
   if (git) return { git, selection: await managedGitSelection(git) }
   const local = catalog.localVaults?.find(vault => vault.id === catalog.activeLocalId)
-  return { git: null, selection: local ? await managedLocalSelection(local) : null }
+  if (local) return { git: null, selection: await managedLocalSelection(local) }
+
+  // Auto-recovery: If active ID was unset, fall back to first available vault instead of empty screen
+  const fallbackGit = catalog.vaults[0]
+  if (fallbackGit) {
+    logDiagnostic('info', 'catalog', `Active vault ID not found, auto-recovering first Git vault: ${fallbackGit.label}`)
+    return { git: fallbackGit, selection: await managedGitSelection(fallbackGit) }
+  }
+  const fallbackLocal = catalog.localVaults?.[0]
+  if (fallbackLocal) {
+    logDiagnostic('info', 'catalog', `Active vault ID not found, auto-recovering first Local vault: ${fallbackLocal.label}`)
+    return { git: null, selection: await managedLocalSelection(fallbackLocal) }
+  }
+
+  return { git: null, selection: null }
 }

@@ -1,4 +1,5 @@
 import './global.css'
+import { useEffect } from 'react'
 import { StatusBar } from 'expo-status-bar'
 import { PortalHost } from '@rn-primitives/portal'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
@@ -10,9 +11,13 @@ import { useNativeGitProbe } from './src/qa/nativeGitProbe'
 import { MobileVaultProvider } from './src/workspace/MobileVaultProvider'
 import { MobileSettingsProvider } from './src/settings/MobileSettingsProvider'
 import { MobileAnalyticsProvider } from './src/analytics/MobileAnalyticsProvider'
+import { logDiagnostic } from './src/diagnostics/mobileDiagnostics'
 
 export function App() {
   useNativeGitProbe()
+  useEffect(() => {
+    logDiagnostic('info', 'lifecycle', 'Tolaria Mobile initialized (v0.2.2 build 4)')
+  }, [])
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <MobileSettingsProvider>

@@ -3,6 +3,7 @@ import type { ActiveVault } from './useManagedVaultCatalog'
 import { prepareNativeWorkspace } from '../prepareNativeWorkspace'
 import { hasPreparedWorkspaceSnapshot } from '../preparedWorkspaceSnapshot'
 import { refreshedVault } from './mobileVaultSelection'
+import { logDiagnostic } from '../../diagnostics/mobileDiagnostics'
 
 type RefreshFailure = { root?: string; selectedNoteId?: string }
 
@@ -15,6 +16,7 @@ export function usePreparedVaultRefresh(publish: (value: ActiveVault) => void) {
       publish(refreshedVault(prepared, previous, requested))
       setFailure(null)
     } catch (error) {
+      logDiagnostic('warn', 'vaultRefresh', `Vault refresh failed for ${next.selection?.vaultRootUri ?? 'unknown'}`, error)
       setFailure({ root: next.selection?.vaultRootUri, selectedNoteId: requested })
       throw error
     }
