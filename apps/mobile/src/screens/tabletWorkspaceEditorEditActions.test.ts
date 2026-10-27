@@ -97,7 +97,7 @@ describe("tablet workspace editor edit actions", () => {
 		expect(editorContentUpdateEdit(snapshot, " ", "fallback\n")).toBeNull();
 	});
 
-	it("automatically renames untitled draft note file to first entered title", () => {
+	it("updates note content without renaming note file on keystroke", () => {
 		const draftNote = {
 			...requiredFixture(workspaceScenarios.default.notes[0]),
 			id: "untitled-note-1740000000.md",
@@ -116,19 +116,9 @@ describe("tablet workspace editor edit actions", () => {
 			"---\ntype: Note\n---\n\n# Meine Einkaufsliste\n\nMilch",
 		);
 		expect(result).toEqual({
-			edits: [
-				{
-					content: "---\ntype: Note\n---\n\n# Meine Einkaufsliste\n\nMilch",
-					noteId: draftNote.id,
-					type: "updateNoteContent",
-				},
-				{
-					filenameStem: "meine-einkaufsliste",
-					noteId: draftNote.id,
-					type: "renameNoteFile",
-				},
-			],
-			type: "bulkEdit",
+			content: "---\ntype: Note\n---\n\n# Meine Einkaufsliste\n\nMilch",
+			noteId: draftNote.id,
+			type: "updateNoteContent",
 		});
 	});
 });

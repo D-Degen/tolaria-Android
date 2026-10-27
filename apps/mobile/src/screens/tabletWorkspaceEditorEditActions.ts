@@ -1,12 +1,4 @@
-import {
-	extractFirstTitleFromMarkdown,
-	isGenericDraftTitle,
-} from "../workspace/mobileDraftCleanup";
 import { mobileNoteActionMode } from "../workspace/mobileNoteActionMode";
-import {
-	mobileFilenameStemForTitle,
-	validateMobileRenameNoteFilePath,
-} from "../workspace/mobileNotePaths";
 import { toggleMobileNoteWidth } from "../workspace/mobileNoteWidth";
 import type { MobileWorkspaceEdit } from "../workspace/mobileWorkspaceEditing";
 import type {
@@ -100,40 +92,11 @@ export function editorContentUpdateEdit(
 		return { content, noteId: trimmedNoteId, type: "updateTextFileContent" };
 	}
 
-	const updateEdit: Extract<
-		MobileWorkspaceEdit,
-		{ type: "updateNoteContent" }
-	> = {
+	return {
 		content,
 		noteId: trimmedNoteId,
 		type: "updateNoteContent",
 	};
-
-	// If the note currently has a generic/untitled title or id, automatically rename the file to the first user-entered title
-	if (isGenericDraftTitle(note.title, note.id)) {
-		const candidateTitle = extractFirstTitleFromMarkdown(content);
-		if (candidateTitle && !isGenericDraftTitle(candidateTitle)) {
-			const filenameStem = mobileFilenameStemForTitle(candidateTitle);
-			if (filenameStem && filenameStem !== "untitled") {
-				const status = validateMobileRenameNoteFilePath({
-					filenameStem,
-					note,
-					notes: workspaceNotes(snapshot),
-				});
-				if (status === "ok") {
-					return {
-						edits: [
-							updateEdit,
-							{ filenameStem, noteId: trimmedNoteId, type: "renameNoteFile" },
-						],
-						type: "bulkEdit",
-					};
-				}
-			}
-		}
-	}
-
-	return updateEdit;
 }
 
 function workspaceNotes(snapshot: MobileWorkspaceSnapshot): MobileNote[] {

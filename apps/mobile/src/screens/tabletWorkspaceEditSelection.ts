@@ -212,6 +212,21 @@ function selectAfterPathMutation({
 	result,
 	setSelectedNoteId,
 }: EditSelectionContext) {
+	const moveWrite = result.writes.find(
+		(candidate) => candidate.kind === "moveNote",
+	);
+	if (moveWrite) {
+		const notes = result.snapshot.allNotes ?? result.snapshot.notes;
+		for (const note of notes) {
+			if (note.path === moveWrite.toPath || note.id === moveWrite.toPath) {
+				if (result.snapshot.selectedNoteId === note.id) {
+					setSelectedNoteId(note.id);
+					return;
+				}
+			}
+		}
+	}
+
 	const pathEdit =
 		edit.type === "bulkEdit"
 			? edit.edits.find(isPathEdit)

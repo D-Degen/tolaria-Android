@@ -19,17 +19,32 @@ export function MobileNoteTitleField({
 }: MobileNoteTitleFieldProps) {
 	const [title, setTitle] = useState(initialTitle);
 	const [lastNoteId, setLastNoteId] = useState(noteId);
+	const [selection, setSelection] = useState<
+		{ start: number; end: number } | undefined
+	>(autoFocus ? { start: 0, end: initialTitle.length } : undefined);
 	const inputRef = useRef<TextInput>(null);
 	const { styles } = useMobileStyles(createTitleStyles);
 
 	if (noteId !== lastNoteId) {
 		setLastNoteId(noteId);
 		setTitle(initialTitle);
+		setSelection(
+			autoFocus ? { start: 0, end: initialTitle.length } : undefined,
+		);
 	}
 
 	useEffect(() => {
 		setTitle(initialTitle);
 	}, [initialTitle]);
+
+	useEffect(() => {
+		if (autoFocus) {
+			const timer = setTimeout(() => {
+				inputRef.current?.focus();
+			}, 100);
+			return () => clearTimeout(timer);
+		}
+	}, [autoFocus, noteId]);
 
 	const commitTitle = useCallback(() => {
 		const trimmed = title.trim();
@@ -37,6 +52,17 @@ export function MobileNoteTitleField({
 			onSubmitTitle(trimmed);
 		}
 	}, [title, initialTitle, onSubmitTitle]);
+
+	const handleChangeText = useCallback((nextText: string) => {
+		setSelection(undefined);
+		setTitle(nextText);
+	}, []);
+
+	const handleSelectionChange = useCallback(() => {
+		if (selection !== undefined) {
+			setSelection(undefined);
+		}
+	}, [selection]);
 
 	return (
 		<View style={styles.container} testID="editor-title-field-container">
@@ -47,11 +73,13 @@ export function MobileNoteTitleField({
 				placeholderTextColor={styles.placeholder.color}
 				returnKeyType="next"
 				selectTextOnFocus={autoFocus}
+				selection={selection}
 				style={styles.input}
 				testID="editor-title-input"
 				value={title}
 				onBlur={commitTitle}
-				onChangeText={setTitle}
+				onChangeText={handleChangeText}
+				onSelectionChange={handleSelectionChange}
 				onSubmitEditing={commitTitle}
 			/>
 		</View>
