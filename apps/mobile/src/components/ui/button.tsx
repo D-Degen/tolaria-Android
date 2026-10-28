@@ -68,15 +68,28 @@ type ButtonProps = React.ComponentProps<typeof Pressable> &
   React.RefAttributes<typeof Pressable> &
   VariantProps<typeof buttonVariants>
 
+const defaultAndroidRipple = {
+  color: 'rgba(0, 0, 0, 0.08)',
+  borderless: false,
+}
+
 function Button({
   className,
   size,
   variant,
+  android_ripple,
   ...props
 }: ButtonProps) {
+  const ripple =
+    android_ripple ??
+    (variant === 'ghost' || size === 'icon'
+      ? { color: 'rgba(0, 0, 0, 0.08)', borderless: true }
+      : defaultAndroidRipple)
+
   return (
     <TextClassContext.Provider value={buttonTextVariants({ size, variant })}>
       <Pressable
+        android_ripple={Platform.OS === 'android' ? ripple : undefined}
         className={cn(props.disabled ? 'opacity-50' : null, buttonVariants({ size, variant }), className)}
         role="button"
         {...props}

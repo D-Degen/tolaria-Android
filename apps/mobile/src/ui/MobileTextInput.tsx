@@ -39,7 +39,7 @@ function createThemeStyles(mobileColors: MobileColors, metrics: MobileMetrics) {
       gap: mobileSpace.xs,
     },
     input: {
-      minHeight: 34,
+      minHeight: Math.max(44, metrics.size(36)),
       borderColor: mobileColors.borderStrong,
       borderRadius: mobileRadius.md,
       borderWidth: StyleSheet.hairlineWidth,

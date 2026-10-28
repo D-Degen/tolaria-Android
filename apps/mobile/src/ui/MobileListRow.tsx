@@ -43,6 +43,9 @@ export function MobileListRow(props: MobileListRowProps) {
         {...rowProbeProps(props.layoutProbe, props.metricId, 'body')}
         accessibilityState={{ selected: rowState.accessibilitySelected }}
         accessibilityRole="button"
+        android_ripple={{
+          color: themeStyles.mobileColors.graySoft ?? 'rgba(0, 0, 0, 0.08)',
+        }}
         onLongPress={props.onLongPress}
         onPress={props.onPress}
         style={rowState.desktopSelected ? styles.baseSelected : styles.base}
