@@ -17,7 +17,6 @@ import { Text } from "../components/ui/text";
 import { MobileEditorBlocks } from "../components/workspace/MobileEditorBlocks";
 import { MobileFilePreview } from "../components/workspace/MobileFilePreview";
 import { MobileMarkdownSourceEditor } from "../components/workspace/MobileMarkdownSourceEditor";
-import { MobileNoteTitleField } from "../components/workspace/MobileNoteTitleField";
 import { MobileWysiwygMarkdownEditor } from "../components/workspace/MobileWysiwygMarkdownEditor";
 import { mobileText } from "../i18n/mobileText";
 import { MobileLayoutProbeReadout } from "../qa/MobileLayoutProbeReadout";
@@ -34,7 +33,7 @@ import {
 } from "../ui/theme/useMobileTheme";
 import { useMobileAttachmentImporter } from "../workspace/mobileAttachmentImport";
 import { useMobileAttachmentLinkOpener } from "../workspace/mobileAttachmentOpen";
-import { isGenericDraftTitle } from "../workspace/mobileDraftCleanup";
+import { resolveDraftLeaveAction } from "../workspace/mobileDraftCleanup";
 import { useRegisteredMobileEditorCommands } from "../workspace/mobileEditorCommands";
 import { mobileNoteActionMode } from "../workspace/mobileNoteActionMode";
 import type { MobileNoteReadState } from "../workspace/mobileNoteRead";
@@ -113,25 +112,19 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
 				: undefined,
 	});
 
-	const noteId = note?.id;
-	const handleTitleSubmit = useCallback(
-		(newTitle: string) => {
-			if (!noteId) return;
-			if (onUpdateTitle) {
-				onUpdateTitle(noteId, newTitle);
-			} else if (renameFilename) {
-				renameFilename.onChange(newTitle);
-				renameFilename.onSubmit();
+	useEffect(() => {
+		return () => {
+			if (!note) return;
+			const action = resolveDraftLeaveAction(note);
+			if (action.type === "rename") {
+				onUpdateTitle?.(action.noteId, action.title);
 			}
-		},
-		[noteId, onUpdateTitle, renameFilename],
-	);
+		};
+	}, [note, onUpdateTitle]);
 
 	if (!note) {
 		return <EmptyEditorPanel />;
 	}
-
-	const isNewDraft = isGenericDraftTitle(note.title, note.id);
 
 	const fileMode = editorFileMode(note);
 	const plainText = fileMode === "text";
@@ -173,14 +166,6 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
 				onToggleFavorite={onToggleFavorite}
 				typeDefinitions={typeDefinitions}
 			/>
-			{fileMode === "markdown" && effectiveEditing ? (
-				<MobileNoteTitleField
-					autoFocus={isNewDraft}
-					initialTitle={note.title}
-					noteId={note.id}
-					onSubmitTitle={handleTitleSubmit}
-				/>
-			) : null}
 			<EditorModeFailure failed={modeSwitchFailed} />
 			<EditorPanelBody
 				compact={compact}

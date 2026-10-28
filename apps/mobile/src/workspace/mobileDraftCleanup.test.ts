@@ -3,6 +3,7 @@ import {
 	extractFirstTitleFromMarkdown,
 	isDiscardableEmptyDraft,
 	isGenericDraftTitle,
+	resolveDraftLeaveAction,
 } from "./mobileDraftCleanup";
 import type { MobileNote } from "./mobileWorkspaceModel";
 
@@ -134,5 +135,61 @@ describe("isDiscardableEmptyDraft", () => {
 			title: "Untitled Note 12345",
 		});
 		expect(isDiscardableEmptyDraft(note)).toBe(false);
+	});
+});
+
+describe("resolveDraftLeaveAction", () => {
+	it("returns delete for empty draft notes", () => {
+		const emptyNote = createTestNote({
+			id: "untitled-note-1740000000.md",
+			rawContent: "---\ntype: Note\n---\n\n# \n\n",
+			title: "Untitled Note 1740000000",
+		});
+		expect(resolveDraftLeaveAction(emptyNote)).toEqual({
+			noteId: emptyNote.id,
+			type: "delete",
+		});
+	});
+
+	it("returns rename for untitled draft with entered heading in content", () => {
+		const draftWithHeading = createTestNote({
+			id: "untitled-note-1740000000.md",
+			rawContent: "---\ntype: Note\n---\n\n# Titel der Notiz\n\nInhalt...",
+			title: "Untitled Note 1740000000",
+		});
+		expect(resolveDraftLeaveAction(draftWithHeading)).toEqual({
+			noteId: draftWithHeading.id,
+			title: "Titel der Notiz",
+			type: "rename",
+		});
+	});
+
+	it("supports contentOverride for pending unflushed draft content", () => {
+		const draftNote = createTestNote({
+			id: "untitled-note-1740000000.md",
+			rawContent: "---\ntype: Note\n---\n\n# \n\n",
+			title: "Untitled Note 1740000000",
+		});
+		expect(
+			resolveDraftLeaveAction(
+				draftNote,
+				"---\ntype: Note\n---\n\n# Neuer Titel\n\nText",
+			),
+		).toEqual({
+			noteId: draftNote.id,
+			title: "Neuer Titel",
+			type: "rename",
+		});
+	});
+
+	it("returns none for already titled non-generic notes", () => {
+		const namedNote = createTestNote({
+			id: "projekt-alpha.md",
+			rawContent: "# Projekt Alpha\n\nPlan",
+			title: "Projekt Alpha",
+		});
+		expect(resolveDraftLeaveAction(namedNote)).toEqual({
+			type: "none",
+		});
 	});
 });

@@ -13,7 +13,9 @@ export function isGenericDraftTitle(
 	if (cleanTitle.length > 0) {
 		return (
 			/^untit(le|el)d/i.test(cleanTitle) ||
-			/untit(le|el)d note/i.test(cleanTitle)
+			/untit(le|el)d note/i.test(cleanTitle) ||
+			/^ohne titel/i.test(cleanTitle) ||
+			/^neue notiz/i.test(cleanTitle)
 		);
 	}
 
@@ -62,13 +64,14 @@ export function extractFirstTitleFromMarkdown(content: string): string | null {
  */
 export function isDiscardableEmptyDraft(
 	note: MobileNote | null | undefined,
+	contentOverride?: string | null,
 ): boolean {
 	if (!note) return false;
 
 	const isGeneric = isGenericDraftTitle(note.title, note.id);
 	if (!isGeneric) return false;
 
-	const content = (note.rawContent ?? "").trim();
+	const content = (contentOverride ?? note.rawContent ?? "").trim();
 	if (!content) return true;
 
 	// Strip YAML frontmatter block if present
@@ -87,4 +90,38 @@ export function isDiscardableEmptyDraft(
 		.trim();
 
 	return cleanBody.length === 0;
+}
+
+export type DraftLeaveAction =
+	| { noteId: string; type: "delete" }
+	| { noteId: string; title: string; type: "rename" }
+	| { type: "none" };
+
+/**
+ * Determines whether a draft note should be deleted (if empty) or renamed
+ * to its first heading/title when leaving the editor.
+ */
+export function resolveDraftLeaveAction(
+	note: MobileNote | null | undefined,
+	contentOverride?: string | null,
+): DraftLeaveAction {
+	if (!note) return { type: "none" };
+
+	if (isDiscardableEmptyDraft(note, contentOverride)) {
+		return { noteId: note.id, type: "delete" };
+	}
+
+	if (isGenericDraftTitle(note.title, note.id)) {
+		const raw = contentOverride ?? note.rawContent ?? "";
+		const candidateTitle = extractFirstTitleFromMarkdown(raw);
+		if (candidateTitle && !isGenericDraftTitle(candidateTitle)) {
+			return {
+				noteId: note.id,
+				title: candidateTitle,
+				type: "rename",
+			};
+		}
+	}
+
+	return { type: "none" };
 }

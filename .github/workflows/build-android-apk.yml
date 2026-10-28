@@ -67,7 +67,7 @@ jobs:
       - name: Prepare Named Release APK
         run: |
           mkdir -p release-dist
-          cp apps/mobile/android/app/build/outputs/apk/release/*.apk release-dist/Tolaria-v0.2.5-Pixel10.apk
+          cp apps/mobile/android/app/build/outputs/apk/release/*.apk release-dist/Tolaria-v0.2.6-Pixel10.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -81,16 +81,15 @@ jobs:
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v0.2.5-pixel10
-          name: Tolaria Mobile v0.2.5 (Pixel 10)
+          tag_name: v0.2.6-pixel10
+          name: Tolaria Mobile v0.2.6 (Pixel 10)
           body: |
-            ### Tolaria Mobile v0.2.5 (Google Pixel 10)
-            - **Autofokus mit vorselektiertem Titel:** Bei einer neuen Notiz öffnet sich die Tastatur automatisch, und der generische Titel ist vollständig vorselektiert, sodass direkt losgetippt werden kann.
-            - **Kein versehentliches Umbenennen beim Schreiben im Dokument:** Das Tippen des ersten Wortes im Notizinhalt benennt die Datei nicht mehr unkontrolliert um; Notizen bleiben stabil ausgewählt.
-            - **Dateiname & Titel synchron:** Beim Bestätigen/Verlassen des Titelfelds wird der Dateiname nahtlos und synchron zur Titeleingabe aktualisiert, ohne dass die Notiz die Auswahl verliert.
+            ### Tolaria Mobile v0.2.6 (Google Pixel 10)
+            - **Kein doppelter Titel:** Das separate Titelfeld oberhalb des Editors wurde entfernt. Der Cursor springt direkt in die erste Überschrift des Dokuments, ohne redundante Doppelanzeige.
+            - **Automatisches Umbenennen beim Verlassen:** Beim Verlassen der Notiz (Zurück-Navigation oder Wechsel) wird der Dateiname und der Titel automatisch anhand der ersten Überschrift aktualisiert.
+            - **Automatisches Verwerfen leerer Notizen:** Wenn kein Inhalt eingegeben wurde, wird der Entwurf beim Verlassen rückstandslos gelöscht.
             - **Typ-Auswahlliste:** Reines Listen-Sheet aller vorhandenen Notiztypen mit Icon und Tone-Badge ohne Suchfeld.
-            - **Automatisches Verwerfen leerer Entwürfe:** Leere Entwürfe mit Standardtiteln ("Untitled Note...", "Untiteld Note...") werden beim Verlassen ohne Inhalt automatisch bereinigt.
-          files: release-dist/Tolaria-v0.2.5-Pixel10.apk
+          files: release-dist/Tolaria-v0.2.6-Pixel10.apk
           prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
