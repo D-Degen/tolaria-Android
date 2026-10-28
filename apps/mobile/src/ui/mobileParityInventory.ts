@@ -242,6 +242,13 @@ export const mobileParityInventory = [
     surface: 'Workspace text and view forms',
   },
 {
+    assertions: ['type picker list, active note type selection, custom type entry, and type icon badges'],
+    contracts: ['desktopPanelParity', 'desktopPropertyParity'],
+    desktopSource: 'NoteTypeSelector and note type picker dialog components',
+    mobileFile: 'src/components/workspace/MobileWorkspaceTypePicker.tsx',
+    surface: 'Note type picker and changer',
+  },
+{
     assertions: ['native property/relationship touch and focus-reveal checks'],
     contracts: ['desktopPanelParity', 'desktopPropertyParity', 'desktopRelationshipParity'],
     desktopSource: 'Desktop inspector property and relationship editing forms',

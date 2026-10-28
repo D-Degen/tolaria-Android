@@ -1,4 +1,4 @@
-name: Build Android APK (Pixel 10)
+name: Build Android APK
 
 on:
   workflow_dispatch:
@@ -61,18 +61,25 @@ jobs:
           NODE_OPTIONS: '--max-old-space-size=4096'
           SENTRY_DISABLE_AUTO_UPLOAD: 'true'
           SENTRY_DISABLE_NATIVE_DEBUG_UPLOAD: 'true'
-        # Pixel 10 utilizes arm64-v8a architecture; disable release lint tasks to skip 3rd-party library lint issues
-        run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a -x lint -x lintVitalRelease -x lintVitalAnalyzeRelease --stacktrace
+        # Build release APK for all Android architectures (universal); disable release lint tasks to skip 3rd-party library lint issues
+        run: ./gradlew assembleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a,x86,x86_64 -x lint -x lintVitalRelease -x lintVitalAnalyzeRelease --stacktrace
+
+      - name: Extract Mobile Version
+        id: mobile-version
+        run: |
+          VERSION=$(node -p "require('./apps/mobile/package.json').version")
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
       - name: Prepare Named Release APK
         run: |
+          VERSION="${{ steps.mobile-version.outputs.version }}"
           mkdir -p release-dist
-          cp apps/mobile/android/app/build/outputs/apk/release/*.apk release-dist/Tolaria-v0.2.6-Pixel10.apk
+          cp apps/mobile/android/app/build/outputs/apk/release/*.apk release-dist/Tolaria-v${VERSION}.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Tolaria-Pixel10-Release-APK
+          name: Tolaria-Release-APK
           path: release-dist/*.apk
           retention-days: 14
           if-no-files-found: error
@@ -81,15 +88,10 @@ jobs:
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v0.2.6-pixel10
-          name: Tolaria Mobile v0.2.6 (Pixel 10)
-          body: |
-            ### Tolaria Mobile v0.2.6 (Google Pixel 10)
-            - **Kein doppelter Titel:** Das separate Titelfeld oberhalb des Editors wurde entfernt. Der Cursor springt direkt in die erste Überschrift des Dokuments, ohne redundante Doppelanzeige.
-            - **Automatisches Umbenennen beim Verlassen:** Beim Verlassen der Notiz (Zurück-Navigation oder Wechsel) wird der Dateiname und der Titel automatisch anhand der ersten Überschrift aktualisiert.
-            - **Automatisches Verwerfen leerer Notizen:** Wenn kein Inhalt eingegeben wurde, wird der Entwurf beim Verlassen rückstandslos gelöscht.
-            - **Typ-Auswahlliste:** Reines Listen-Sheet aller vorhandenen Notiztypen mit Icon und Tone-Badge ohne Suchfeld.
-          files: release-dist/Tolaria-v0.2.6-Pixel10.apk
+          tag_name: v${{ steps.mobile-version.outputs.version }}
+          name: Tolaria Mobile v${{ steps.mobile-version.outputs.version }}
+          generate_release_notes: true
+          files: release-dist/*.apk
           prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

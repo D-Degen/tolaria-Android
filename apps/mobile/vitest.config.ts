@@ -12,6 +12,7 @@ export default defineConfig({
   test: {
     server: { deps: { inline: [/tentap-editor/] } },
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    exclude: ['**/node_modules/**', 'src/qa/playwrightStartup.test.ts'],
   },
 })

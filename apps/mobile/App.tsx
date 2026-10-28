@@ -12,11 +12,24 @@ import { MobileVaultProvider } from './src/workspace/MobileVaultProvider'
 import { MobileSettingsProvider } from './src/settings/MobileSettingsProvider'
 import { MobileAnalyticsProvider } from './src/analytics/MobileAnalyticsProvider'
 import { logDiagnostic } from './src/diagnostics/mobileDiagnostics'
+import Constants from 'expo-constants'
+import { nativeApplicationVersion, nativeBuildVersion } from 'expo-application'
+
+const appMountTimestamp = typeof performance !== 'undefined' ? performance.now() : Date.now()
 
 export function App() {
   useNativeGitProbe()
   useEffect(() => {
-    logDiagnostic('info', 'lifecycle', 'Tolaria Mobile initialized (v0.2.2 build 4)')
+    const startupDurationMs = Math.round(
+      (typeof performance !== 'undefined' ? performance.now() : Date.now()) - appMountTimestamp,
+    )
+    const version = nativeApplicationVersion ?? Constants.expoConfig?.version ?? '0.2.6'
+    const build = nativeBuildVersion ?? Constants.expoConfig?.android?.versionCode ?? 8
+    logDiagnostic(
+      'info',
+      'lifecycle',
+      `Tolaria Mobile initialized (v${version} build ${build}) in ${startupDurationMs}ms`,
+    )
   }, [])
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
