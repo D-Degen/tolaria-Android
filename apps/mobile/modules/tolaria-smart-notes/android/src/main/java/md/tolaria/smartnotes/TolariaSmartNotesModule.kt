@@ -48,7 +48,7 @@ class TolariaSmartNotesModule : Module() {
         "engine" to "gemini-nano",
         "model" to "Gemini Nano (AICore)"
       )
-    } catch (_: Throwable) {
+    } catch (e: Throwable) {
       mapOf(
         "available" to false,
         "engine" to "gemini-nano",
@@ -69,7 +69,7 @@ class TolariaSmartNotesModule : Module() {
       } else {
         ""
       }
-    } catch (_: Throwable) {
+    } catch (e: Throwable) {
       ""
     }
   }

@@ -14,7 +14,4 @@ android {
   }
 }
 
-dependencies {
-  compileOnly 'com.google.mlkit:genai-prompt:1.0.0-beta4'
-}
 
