@@ -43,6 +43,20 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Inject Dynamic Android VersionCode (Run Number)
+        id: dynamic-versioncode
+        run: |
+          DYNAMIC_VERSION_CODE=$((10 + ${{ github.run_number }}))
+          echo "Setting Android versionCode to ${DYNAMIC_VERSION_CODE}"
+          node -e "
+            const fs = require('fs');
+            const path = './apps/mobile/app.json';
+            const app = JSON.parse(fs.readFileSync(path, 'utf8'));
+            app.expo.android.versionCode = ${DYNAMIC_VERSION_CODE};
+            fs.writeFileSync(path, JSON.stringify(app, null, 2) + '\n');
+          "
+          echo "versionCode=${DYNAMIC_VERSION_CODE}" >> $GITHUB_OUTPUT
+
       - name: Generate Android native project (Expo Prebuild)
         working-directory: apps/mobile
         env:
@@ -62,7 +76,7 @@ jobs:
           SENTRY_DISABLE_AUTO_UPLOAD: 'true'
           SENTRY_DISABLE_NATIVE_DEBUG_UPLOAD: 'true'
         # Build release APK for all Android architectures (universal); disable release lint tasks to skip 3rd-party library lint issues
-        run: ./gradlew assembleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a,x86,x86_64 -x lint -x lintVitalRelease -x lintVitalAnalyzeRelease --stacktrace
+        run: ./gradlew assembleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a,x86,x86_64 -PversionCode=${{ steps.dynamic-versioncode.outputs.versionCode }} -x lint -x lintVitalRelease -x lintVitalAnalyzeRelease --stacktrace
 
       - name: Extract Mobile Version
         id: mobile-version
