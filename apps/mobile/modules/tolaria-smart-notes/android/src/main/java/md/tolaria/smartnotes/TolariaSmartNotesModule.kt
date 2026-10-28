@@ -2,53 +2,39 @@ package md.tolaria.smartnotes
 
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 class TolariaSmartNotesModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("TolariaSmartNotes")
 
     AsyncFunction("isAvailable") {
-      withContext(Dispatchers.IO) {
-        checkGeminiNanoAvailable()
-      }
+      checkGeminiNanoAvailable()
     }
 
     AsyncFunction("generateContent") { prompt: String ->
-      withContext(Dispatchers.IO) {
-        executePrompt(prompt)
-      }
+      executePrompt(prompt)
     }
 
     AsyncFunction("summarize") { text: String ->
-      withContext(Dispatchers.IO) {
-        val prompt = "Fasse die folgende Notiz kurz und prägnant in 2 bis 4 Aufzählungspunkten auf Deutsch zusammen (- Punkt):\n\n$text"
-        executePrompt(prompt)
-      }
+      val prompt = "Fasse die folgende Notiz kurz und prägnant in 2 bis 4 Aufzählungspunkten auf Deutsch zusammen (- Punkt):\n\n$text"
+      executePrompt(prompt)
     }
 
     AsyncFunction("suggestTitle") { text: String ->
-      withContext(Dispatchers.IO) {
-        val prompt = "Erstelle einen kurzen, prägnanten Titel (maximal 6 Wörter, ohne Anführungszeichen) für folgenden Notiztext:\n\n$text"
-        executePrompt(prompt).trim().removeSurrounding("\"").removeSurrounding("'")
-      }
+      val prompt = "Erstelle einen kurzen, prägnanten Titel (maximal 6 Wörter, ohne Anführungszeichen) für folgenden Notiztext:\n\n$text"
+      executePrompt(prompt).trim().removeSurrounding("\"").removeSurrounding("'")
     }
 
     AsyncFunction("generateTags") { text: String ->
-      withContext(Dispatchers.IO) {
-        val prompt = "Generiere 3 bis 5 thematisch passende Tags für diesen Text. Gib ausschließlich eine kommagetrennte Liste ohne '#' oder Erklärungen zurück:\n\n$text"
-        val raw = executePrompt(prompt)
-        raw.split(",").map { it.trim().removePrefix("#").lowercase() }.filter { it.isNotEmpty() }
-      }
+      val prompt = "Generiere 3 bis 5 thematisch passende Tags für diesen Text. Gib ausschließlich eine kommagetrennte Liste ohne '#' oder Erklärungen zurück:\n\n$text"
+      val raw = executePrompt(prompt)
+      raw.split(",").map { it.trim().removePrefix("#").lowercase() }.filter { it.isNotEmpty() }
     }
 
     AsyncFunction("extractTodos") { text: String ->
-      withContext(Dispatchers.IO) {
-        val prompt = "Extrahiere alle Aufgaben, To-Dos und Handlungsanweisungen aus diesem Notiztext. Formatiere jede Zeile als '- [ ] <Aufgabe>':\n\n$text"
-        val raw = executePrompt(prompt)
-        raw.lines().map { it.trim() }.filter { it.isNotEmpty() }
-      }
+      val prompt = "Extrahiere alle Aufgaben, To-Dos und Handlungsanweisungen aus diesem Notiztext. Formatiere jede Zeile als '- [ ] <Aufgabe>':\n\n$text"
+      val raw = executePrompt(prompt)
+      raw.lines().map { it.trim() }.filter { it.isNotEmpty() }
     }
   }
 
