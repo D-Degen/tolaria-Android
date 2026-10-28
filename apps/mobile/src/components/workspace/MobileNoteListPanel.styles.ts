@@ -10,10 +10,22 @@ export function createActionStyles(mobileColors: MobileColors, metrics: MobileMe
   const inset = metrics.size(mobileNoteListCreateChrome.inset)
   const styles = StyleSheet.create({
     createAction: {
-      position: 'absolute', right: inset, bottom: inset,
-      width: diameter, height: diameter, borderRadius: diameter / 2,
+      position: 'absolute',
+      right: inset,
+      bottom: inset,
+      width: diameter,
+      height: diameter,
+      borderRadius: diameter / 2,
       backgroundColor: mobileColors.primary,
-      alignItems: 'center', justifyContent: 'center', padding: 0,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 0,
+      zIndex: 50,
+      elevation: 6,
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.27,
+      shadowRadius: 4.65,
     },
   })
   return { mobileColors, styles, createIconSize: metrics.size(mobileNoteListCreateChrome.iconSize) }
@@ -130,6 +142,7 @@ function createListStyles(mobileColors: MobileColors, metrics: MobileMetrics) {
     listBody: {
       flex: 1,
       minHeight: 0,
+      position: 'relative',
     },
     listContent: {
       paddingHorizontal: 0,

@@ -6,7 +6,7 @@ export const mobileNoteListToolbarChrome = {
 
 export const mobileNoteListCreateChrome = {
   testID: 'note-list-create-action',
-  diameter: 48,
+  diameter: 56,
   inset: 16,
   iconSize: 24,
 } as const

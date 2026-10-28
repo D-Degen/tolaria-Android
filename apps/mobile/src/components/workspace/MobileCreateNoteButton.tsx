@@ -12,13 +12,13 @@ export function MobileCreateNoteButton({ onPress, visible }: { onPress: () => vo
   return (
     <Button
       accessibilityLabel={mobileCopy.createNote}
-      className="shadow-md active:opacity-80"
-      size="icon"
+      android_ripple={{ color: 'rgba(255, 255, 255, 0.24)', borderless: false }}
+      className="shadow-lg active:opacity-90"
       style={StyleSheet.flatten(styles.createAction)}
       testID={mobileNoteListCreateChrome.testID}
       onPress={onPress}
     >
-      <Plus color={mobileColors.textInverse} size={createIconSize} />
+      <Plus color={mobileColors.textInverse} size={createIconSize} weight="bold" />
     </Button>
   )
 }
