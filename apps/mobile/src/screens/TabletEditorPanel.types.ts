@@ -33,6 +33,7 @@ export type TabletEditorPanelProps = {
   onNavigateWikilink: (target: string) => void
   onOpenChangeNoteType?: () => void
   onOpenMoreActions: () => void
+  onOpenSmartNotes?: () => void
   onOpenTableOfContents?: () => void
   onRegisterEditorCommands?: RegisterMobileEditorCommands
   onTableOfContentsScrollProof?: (proof: NativeTableOfContentsProof) => void
@@ -68,6 +69,7 @@ export type EditorToolbarProps = {
   note: MobileNote
   onOpenChangeNoteType?: () => void
   onOpenMoreActions: () => void
+  onOpenSmartNotes?: () => void
   onOpenTableOfContents?: () => void
   onToggleProperties?: () => void
   onToggleSourceMode: () => void

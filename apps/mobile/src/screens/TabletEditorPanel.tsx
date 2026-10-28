@@ -80,6 +80,7 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
 		noteRead,
 		onOpenChangeNoteType,
 		onOpenMoreActions,
+		onOpenSmartNotes,
 		onOpenTableOfContents,
 		onRegisterEditorCommands,
 		onTableOfContentsScrollProof,
@@ -161,6 +162,7 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
 				renameFilename={renameFilename}
 				onOpenChangeNoteType={onOpenChangeNoteType}
 				onOpenMoreActions={onOpenMoreActions}
+				onOpenSmartNotes={onOpenSmartNotes}
 				onOpenTableOfContents={onOpenTableOfContents}
 				onToggleSourceMode={toggleSourceMode}
 				onToggleFavorite={onToggleFavorite}

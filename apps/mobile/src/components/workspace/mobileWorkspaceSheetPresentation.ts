@@ -30,6 +30,7 @@ const actionTitleByAction: Record<MobileWorkspaceAction, Parameters<typeof mobil
   replaceInNote: 'command.note.replaceInNote',
   search: 'noteList.searchAction',
   setNoteIcon: 'command.note.setIcon',
+  smartNotes: 'editor.toolbar.openAi',
   tableOfContents: 'tableOfContents.title',
 }
 

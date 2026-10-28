@@ -67,6 +67,8 @@ function controllerActions(noop: () => void) {
     onOpenFavoriteActions: noop,
     onOpenFolderActions: noop,
     onOpenMoreActions: noop,
+    onOpenSmartNotes: noop,
+    onOpenTableOfContents: noop,
     onOpenPrimaryActions: noop,
     onOpenSearch: noop,
     onOpenTypeActions: noop,

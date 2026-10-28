@@ -3,7 +3,7 @@ import { useMobileStyles } from '../../ui/theme/useMobileTheme'
 import type { MobileColors } from '../../ui/theme/mobilePalette'
 import { useState, type ReactNode } from 'react'
 import { ScrollView, StyleSheet, View } from 'react-native'
-import { Code, FilePlus, LinkSimple, ListBullets, Star } from 'phosphor-react-native'
+import { Code, FilePlus, LinkSimple, ListBullets, Sparkle, Star } from 'phosphor-react-native'
 import { Text } from '../ui/text'
 import { Button } from '../ui/button'
 import { mobileText } from '../../i18n/mobileText'
@@ -148,6 +148,14 @@ function MarkdownNoteMoreActionRows({
         testID="workspace-action-table-of-contents"
         onPress={props.onOpenTableOfContents}
       /> : null}
+      {props.onOpenSmartNotes ? (
+        <MoreActionRow
+          icon={<Sparkle color={mobileColors.primary} size={desktopToolbarActionParity.iconSize} weight="bold" />}
+          label="Smart Notes (Gemini Nano)"
+          testID="workspace-action-smart-notes"
+          onPress={props.onOpenSmartNotes}
+        />
+      ) : null}
       <MobileTableMoreActions
         editorBlocks={props.editorBlocks}
         editorBullets={props.editorBullets}

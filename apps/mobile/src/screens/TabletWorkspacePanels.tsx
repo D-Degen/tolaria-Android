@@ -54,6 +54,7 @@ type TabletEditorPanelHostProps = Pick<
 	| "onFilenameStemChange"
 	| "onRenameNoteFile"
 	| "readOnlyForm"
+	| "onOpenSmartNotes"
 	| "onOpenTableOfContents"
 	| "onTableOfContentsScrollProof"
 	| "onToggleFavorite"
@@ -253,6 +254,7 @@ function tabletEditorPanelProps(
 		onNavigateWikilink: props.onNavigateWikilink,
 		onOpenChangeNoteType: props.onOpenChangeNoteType,
 		onOpenMoreActions: props.onOpenMoreActions,
+		onOpenSmartNotes: props.onOpenSmartNotes,
 		onOpenTableOfContents: props.onOpenTableOfContents,
 		onRegisterEditorCommands: props.onRegisterEditorCommands,
 		onTableOfContentsScrollProof: props.onTableOfContentsScrollProof,

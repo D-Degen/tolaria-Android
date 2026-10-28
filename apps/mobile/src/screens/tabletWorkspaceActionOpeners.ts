@@ -95,6 +95,7 @@ export function noteWorkspaceActionOpeners({
     onOpenSetNoteIcon: () => openAction('setNoteIcon', [
       { key: 'noteIcon', value: selectedNote?.icon ?? '' },
     ]),
+    onOpenSmartNotes: () => setOpenAction('smartNotes'),
     onOpenTableOfContents: () => setOpenAction('tableOfContents'),
   }
 }

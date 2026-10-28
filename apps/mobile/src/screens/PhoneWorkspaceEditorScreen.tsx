@@ -57,6 +57,8 @@ function PhoneEditorBody(props: PhoneEditorBodyProps) {
 			onNavigateWikilink={onNavigateWikilink}
 			onOpenChangeNoteType={controller.onOpenChangeNoteType}
 			onOpenMoreActions={controller.onOpenMoreActions}
+			onOpenSmartNotes={controller.onOpenSmartNotes}
+			onOpenTableOfContents={controller.onOpenTableOfContents}
 			onRegisterEditorCommands={onRegisterEditorCommands}
 			onToggleFavorite={controller.onToggleFavorite}
 			onUpdateContent={controller.onUpdateNoteContent}

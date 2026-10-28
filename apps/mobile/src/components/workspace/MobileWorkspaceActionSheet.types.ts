@@ -8,6 +8,7 @@ import type {
 import type {
 	MobileEditorBlock,
 	MobileNote,
+	MobilePropertyValue,
 	MobileSidebarIcon,
 	MobileTone,
 	MobileTypeDefinitions,
@@ -36,6 +37,7 @@ export type MobileWorkspaceAction =
 	| "replaceInNote"
 	| "search"
 	| "setNoteIcon"
+	| "smartNotes"
 	| "tableOfContents";
 
 export type MobileWorkspaceActionSheetProps = {
@@ -81,6 +83,7 @@ export type MobileWorkspaceActionSheetProps = {
 	onDeleteFolder: () => void;
 	onDeleteNote: () => void;
 	onDeleteProperty: (noteId: string, key: string) => void;
+	onEditProperty?: (noteId: string, key: string, value: MobilePropertyValue) => void;
 	onEnterNeighborhood: (noteId: string) => void;
 	onExportNoteAsPdf: () => void;
 	onDeleteType: () => void;
@@ -105,6 +108,7 @@ export type MobileWorkspaceActionSheetProps = {
 	onOpenReplaceInNote: () => void;
 	onOpenRenameNoteFile: () => void;
 	onOpenSetNoteIcon: () => void;
+	onOpenSmartNotes?: () => void;
 	onOpenTableOfContents: () => void;
 	onSelectTableOfContentsTarget?: (target: MobileTableOfContentsTarget) => void;
 	onPrimaryAllNotesShowImagesChange: (value: boolean) => void;

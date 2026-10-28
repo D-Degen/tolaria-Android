@@ -1,0 +1,8 @@
+{
+  "name": "tolaria-smart-notes",
+  "version": "0.1.0",
+  "description": "Tolaria Android Gemini Nano & AICore Smart Notes module.",
+  "license": "AGPL-3.0-or-later",
+  "private": true,
+  "main": "index.ts"
+}

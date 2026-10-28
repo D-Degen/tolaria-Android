@@ -31,6 +31,7 @@ import { useMobileModalDismiss } from "../../workspace/useMobileModalDismiss";
 import { Text } from "../ui/text";
 import { MobileEditorFindSheet } from "./MobileEditorFindSheet";
 import { MobileQuickOpenSheet } from "./MobileQuickOpenSheet";
+import { MobileSmartNotesContent } from "./MobileSmartNotesContent";
 import { MobileTableOfContentsSheet } from "./MobileTableOfContentsSheet";
 import { MobileTypeSectionEditor } from "./MobileTypeSectionEditor";
 import { MobileTypeVisibilityEditor } from "./MobileTypeVisibilityEditor";
@@ -214,6 +215,14 @@ const actionContentByAction: Record<
 	),
 	search: (props) => <SearchContent {...props} />,
 	setNoteIcon: (props) => <WorkspaceSingleTextFieldContent {...props} />,
+	smartNotes: (props) => (
+		<MobileSmartNotesContent
+			note={props.selectedNote}
+			onClose={props.onClose}
+			onEditProperty={props.onEditProperty}
+			onUpdateContent={props.onUpdateNoteContent}
+		/>
+	),
 	tableOfContents: (props) => (
 		<MobileTableOfContentsSheet
 			blocks={props.editorBlocks}

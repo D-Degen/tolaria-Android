@@ -203,6 +203,7 @@ export type TabletWorkspaceChromeProps = {
 	onOpenSearch: () => void;
 	onOpenActionSheetQaTarget: (target: MobileActionSheetQaTarget) => void;
 	onOpenTableOfContents: () => void;
+	onOpenSmartNotes: () => void;
 	onTableOfContentsScrollProof?: (proof: NativeTableOfContentsProof) => void;
 	onNoteListFilterChange: (filter: MobileNoteListFilter) => void;
 	onPrimaryAllNotesShowImagesChange: (value: boolean) => void;
