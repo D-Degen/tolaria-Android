@@ -1,42 +1,12 @@
 package md.tolaria.smartnotes
 
 import android.content.Intent
-import android.os.Build
-import com.google.mlkit.genai.common.FeatureStatus
-import com.google.mlkit.genai.prompt.Generation
-import com.google.mlkit.genai.prompt.GenerativeModel
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeoutOrNull
 
 class TolariaSmartNotesModule : Module() {
-  @Volatile
-  private var generativeModel: GenerativeModel? = null
-
-  private fun getOrCreateModel(): GenerativeModel {
-    val existing = generativeModel
-    if (existing != null) return existing
-    return synchronized(this) {
-      generativeModel ?: Generation.getClient().also { generativeModel = it }
-    }
-  }
-
   override fun definition() = ModuleDefinition {
     Name("TolariaSmartNotes")
-
-    OnDestroy {
-      try {
-        generativeModel?.close()
-      } catch (e: Throwable) {
-      } finally {
-        generativeModel = null
-      }
-    }
 
     AsyncFunction("isAvailable") {
       checkGeminiNanoAvailable()
@@ -113,66 +83,35 @@ class TolariaSmartNotesModule : Module() {
   }
 
   private fun checkGeminiNanoAvailable(): Map<String, Any> {
-    if (Build.VERSION.SDK_INT < 26) {
-      return mapOf(
-        "available" to false,
-        "engine" to "gemini-nano",
-        "reason" to "Requires Android 8.0 (API 26) or higher"
-      )
-    }
     return try {
-      runBlocking {
-        val model = getOrCreateModel()
-        val status = model.checkStatus()
-        when (status) {
-          FeatureStatus.AVAILABLE -> mapOf(
-            "available" to true,
-            "engine" to "gemini-nano",
-            "model" to "Gemini Nano (AICore)"
-          )
-          FeatureStatus.DOWNLOADABLE, FeatureStatus.DOWNLOADING -> mapOf(
-            "available" to true,
-            "engine" to "gemini-nano",
-            "model" to "Gemini Nano (AICore - Downloadable)"
-          )
-          else -> mapOf(
-            "available" to false,
-            "engine" to "gemini-nano",
-            "reason" to "Gemini Nano status: $status"
-          )
-        }
-      }
+      val generationClass = Class.forName("com.google.mlkit.genai.prompt.Generation")
+      val getClientMethod = generationClass.getMethod("getClient")
+      val client = getClientMethod.invoke(null)
+      mapOf(
+        "available" to (client != null),
+        "engine" to "gemini-nano",
+        "model" to "Gemini Nano (AICore)"
+      )
     } catch (e: Throwable) {
       mapOf(
         "available" to false,
         "engine" to "gemini-nano",
-        "reason" to (e.message ?: "ML Kit GenAI Prompt API / AICore not present on this device")
+        "reason" to "ML Kit GenAI Prompt API / AICore not present on this device"
       )
     }
   }
 
   private fun executePrompt(prompt: String): String {
-    if (Build.VERSION.SDK_INT < 26) return ""
     return try {
-      runBlocking {
-        withTimeoutOrNull(15_000L) {
-          val model = getOrCreateModel()
-          val status = model.checkStatus()
-          if (status == FeatureStatus.DOWNLOADABLE) {
-            CoroutineScope(Dispatchers.IO).launch {
-              try {
-                model.download().collect {}
-              } catch (e: Throwable) {
-              }
-            }
-            ""
-          } else if (status == FeatureStatus.AVAILABLE) {
-            val response = model.generateContent(prompt)
-            response.candidates.firstOrNull()?.text?.trim() ?: ""
-          } else {
-            ""
-          }
-        } ?: ""
+      val generationClass = Class.forName("com.google.mlkit.genai.prompt.Generation")
+      val getClientMethod = generationClass.getMethod("getClient")
+      val client = getClientMethod.invoke(null)
+      if (client != null) {
+        val generateMethod = client.javaClass.methods.firstOrNull { it.name == "generateContent" }
+        val result = generateMethod?.invoke(client, prompt)
+        result?.toString() ?: ""
+      } else {
+        ""
       }
     } catch (e: Throwable) {
       ""
