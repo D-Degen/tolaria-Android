@@ -10,6 +10,7 @@ import {
 	setOrganizedEdit,
 	toggleFavoriteEdit,
 	toggleNoteWidthEdit,
+	updateNoteTitleEdit,
 } from "./tabletWorkspaceEditorEditActions";
 
 describe("tablet workspace editor edit actions", () => {
@@ -97,7 +98,7 @@ describe("tablet workspace editor edit actions", () => {
 		expect(editorContentUpdateEdit(snapshot, " ", "fallback\n")).toBeNull();
 	});
 
-	it("updates note content without renaming note file on keystroke", () => {
+	it("updates note content without renaming note file while typing on the first heading line", () => {
 		const draftNote = {
 			...requiredFixture(workspaceScenarios.default.notes[0]),
 			id: "untitled-note-1740000000.md",
@@ -113,12 +114,23 @@ describe("tablet workspace editor edit actions", () => {
 		const result = editorContentUpdateEdit(
 			snapshot,
 			draftNote.id,
-			"---\ntype: Note\n---\n\n# Meine Einkaufsliste\n\nMilch",
+			"---\ntype: Note\n---\n\n# Meine Einkaufsliste",
 		);
 		expect(result).toEqual({
-			content: "---\ntype: Note\n---\n\n# Meine Einkaufsliste\n\nMilch",
+			content: "---\ntype: Note\n---\n\n# Meine Einkaufsliste",
 			noteId: draftNote.id,
 			type: "updateNoteContent",
 		});
+	});
+
+	it("builds title property update edit for draft rename on editor leave", () => {
+		expect(updateNoteTitleEdit(" untitled-note-1.md ", " Meine Einkaufsliste ")).toEqual({
+			key: "title",
+			noteId: "untitled-note-1.md",
+			type: "updateProperty",
+			value: "Meine Einkaufsliste",
+		});
+		expect(updateNoteTitleEdit("untitled-note-1.md", "   ")).toBeNull();
+		expect(updateNoteTitleEdit("   ", "Title")).toBeNull();
 	});
 });

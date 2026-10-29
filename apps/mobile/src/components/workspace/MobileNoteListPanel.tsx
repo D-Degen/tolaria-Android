@@ -66,6 +66,7 @@ type MobileNoteListPanelProps = {
   noteListFilterVisible?: boolean
   notes: MobileNote[]
   onOpenCreateNote: () => void
+  onOpenSmartCreateNote?: () => void
   onOpenSearch: () => void
   onOpenVault?: () => void
   onNoteListFilterChange?: (filter: MobileNoteListFilter) => void
@@ -98,6 +99,7 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
     noteListFilterCounts = { archived: 0, open: 0 },
     notes,
     onOpenCreateNote,
+    onOpenSmartCreateNote,
     onOpenSearch,
     onOpenVault,
     onSelectNote,
@@ -168,6 +170,7 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
         />
         <MobileCreateNoteButton
           visible={showCreateAction && bulkSelection.selectedNotes.length === 0}
+          onLongPress={onOpenSmartCreateNote}
           onPress={onOpenCreateNote}
         />
       </View>

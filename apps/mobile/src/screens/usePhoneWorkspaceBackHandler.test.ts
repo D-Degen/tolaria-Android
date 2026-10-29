@@ -98,6 +98,22 @@ it('prioritizes closing active workspace action sheet over screen navigation', (
   expect(openList).not.toHaveBeenCalled()
 })
 
+it('clears bulk selection when on list screen with active bulk selection', () => {
+  const clearBulkSelection = vi.fn()
+  const clearSearch = vi.fn()
+  const handled = handlePhoneWorkspaceBackPress({
+    phoneState: 'list',
+    navigation: { openEditor: vi.fn(), openList: vi.fn() },
+    bulkSelectionActive: true,
+    clearBulkSelection,
+    searchQuery: 'testing',
+    clearSearch,
+  })
+  expect(handled).toBe(true)
+  expect(clearBulkSelection).toHaveBeenCalledOnce()
+  expect(clearSearch).not.toHaveBeenCalled()
+})
+
 it('clears search query when on list screen', () => {
   const clearSearch = vi.fn()
   const handled = handlePhoneWorkspaceBackPress({

@@ -81,9 +81,19 @@ function PhoneWorkspaceChrome(props: PhoneWorkspaceChromeProps) {
       setPhoneState('editor')
     }
   }, [baseController, setPhoneState])
+  const createSmartAndOpenNote = useCallback((draft: { title: string; type: string; tags: string[]; markdownBody: string }) => {
+    baseController.onCreateSmartNote?.(draft)
+    if (baseController.snapshot.sync.kind !== 'noVault' && baseController.snapshot.sync.kind !== 'readOnly') {
+      setPhoneState('editor')
+    }
+  }, [baseController, setPhoneState])
   const controller = useMemo(
-    () => ({ ...baseController, onOpenCreateNote: createAndOpenNote }),
-    [baseController, createAndOpenNote],
+    () => ({
+      ...baseController,
+      onOpenCreateNote: createAndOpenNote,
+      onCreateSmartNote: createSmartAndOpenNote,
+    }),
+    [baseController, createAndOpenNote, createSmartAndOpenNote],
   )
   const [sourceModeRequest, setSourceModeRequest] = useState(0)
   const width = usePhoneViewportWidth()
@@ -91,7 +101,12 @@ function PhoneWorkspaceChrome(props: PhoneWorkspaceChromeProps) {
   const editorCommandRegistry = useMobileEditorCommandRegistry()
   const tableOfContents = usePhoneTableOfContentsTarget(setPhoneState)
   const phoneLayoutProbe = useMobileLayoutProbe(options.layoutProbe)
-  const navigation = usePhoneWorkspaceNavigation({ controller, setPhoneState, setSourceModeRequest })
+  const navigation = usePhoneWorkspaceNavigation({
+    controller,
+    saveActiveEditor: editorCommandRegistry.commands.save,
+    setPhoneState,
+    setSourceModeRequest,
+  })
   const selectNextNote = useCallback(() => selectAdjacentVisiblePhoneNote(controller.notes, controller.selectedNoteId, controller.onSelectNote, 1), [controller])
   const selectPreviousNote = useCallback(() => selectAdjacentVisiblePhoneNote(controller.notes, controller.selectedNoteId, controller.onSelectNote, -1), [controller])
   const commandPalette = usePhoneCommandPalette({

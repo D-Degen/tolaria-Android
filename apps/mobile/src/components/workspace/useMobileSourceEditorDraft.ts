@@ -41,14 +41,15 @@ export function useMobileSourceEditorDraft({ idleSave = true, inputRef, noteId, 
     if (commitTimerRef.current) clearTimeout(commitTimerRef.current)
     commitTimerRef.current = null
   }, [])
-  const flushDraft = useCallback((updateState: boolean) => {
+  const flushDraft = useCallback((updateState: boolean): string => {
     clearScheduledCommit()
     const current = draftRef.current
-    if (!mobileEditorDraftNeedsCommit(current)) return
+    if (!mobileEditorDraftNeedsCommit(current)) return current.draftContent
     onCommitRef.current(current.noteId, current.draftContent)
     const committed = commitMobileEditorDraft(current)
     draftRef.current = committed
     if (updateState) setDraft(committed)
+    return current.draftContent
   }, [clearScheduledCommit])
   const commitDraft = useCallback(() => flushDraft(true), [flushDraft])
   const scheduleCommit = useCallback(() => {

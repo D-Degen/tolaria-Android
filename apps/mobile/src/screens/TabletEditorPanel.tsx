@@ -7,6 +7,7 @@ import {
 	useState,
 } from "react";
 import {
+	AppState,
 	type LayoutChangeEvent,
 	type NativeScrollEvent,
 	type NativeSyntheticEvent,
@@ -113,15 +114,39 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
 				: undefined,
 	});
 
+	const latestNoteRef = useRef(note);
+	const latestOnUpdateTitleRef = useRef(onUpdateTitle);
+	useEffect(() => {
+		latestNoteRef.current = note;
+		latestOnUpdateTitleRef.current = onUpdateTitle;
+	});
+	const currentNoteId = note?.id;
+
 	useEffect(() => {
 		return () => {
-			if (!note) return;
-			const action = resolveDraftLeaveAction(note);
+			const leavingNote = latestNoteRef.current;
+			if (!leavingNote) return;
+			const action = resolveDraftLeaveAction(leavingNote);
 			if (action.type === "rename") {
-				onUpdateTitle?.(action.noteId, action.title);
+				latestOnUpdateTitleRef.current?.(action.noteId, action.title);
 			}
 		};
-	}, [note, onUpdateTitle]);
+	}, [currentNoteId]);
+
+	useEffect(() => {
+		const subscription = AppState?.addEventListener?.("change", (nextState) => {
+			if (nextState !== "background" && nextState !== "inactive") return;
+			const currentNote = latestNoteRef.current;
+			if (!currentNote) return;
+			const action = resolveDraftLeaveAction(currentNote);
+			if (action.type === "rename") {
+				latestOnUpdateTitleRef.current?.(action.noteId, action.title);
+			}
+		});
+		return () => {
+			subscription?.remove?.();
+		};
+	}, []);
 
 	if (!note) {
 		return <EmptyEditorPanel />;

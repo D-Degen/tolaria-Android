@@ -59,6 +59,7 @@ type TabletEditorPanelHostProps = Pick<
 	| "onTableOfContentsScrollProof"
 	| "onToggleFavorite"
 	| "onUpdateNoteContent"
+	| "onUpdateNoteTitle"
 	| "selectedNote"
 	| "selectedNoteRead"
 	| "sourceIdleSave"
@@ -212,6 +213,7 @@ function tabletNoteListPanelProps(
 		typeDefinitions: props.snapshot.typeDefinitions,
 		onNoteListFilterChange: props.onNoteListFilterChange,
 		onOpenCreateNote: props.onOpenCreateNote,
+		onOpenSmartCreateNote: props.onOpenSmartCreateNote,
 		onOpenSearch: props.onOpenSearch,
 		onOpenVault: props.onOpenNativeVault,
 		onToggleNoteFavorite: props.onToggleNoteFavorite,
@@ -261,7 +263,11 @@ function tabletEditorPanelProps(
 		onToggleFavorite: props.onToggleFavorite,
 		onUpdateContent: props.onUpdateNoteContent,
 		onUpdateTitle: (noteId: string, title: string) => {
-			props.onEditProperty(noteId, "title", title);
+			if (props.onUpdateNoteTitle) {
+				props.onUpdateNoteTitle(noteId, title);
+			} else {
+				props.onEditProperty(noteId, "title", title);
+			}
 		},
 		renameFilename: {
 			value: props.readOnlyForm.filenameStem,

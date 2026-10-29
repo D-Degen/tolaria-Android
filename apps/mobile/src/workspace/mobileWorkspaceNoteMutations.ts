@@ -1,5 +1,6 @@
 import { deriveEditableNote, humanizeKey, normalizedFrontmatterKey, type EditableNoteInput } from './mobileEditableNote'
 import { frontmatterRelationships, parseLocalVaultDocument } from './localVaultFrontmatter'
+import { mobileDocumentBody, mobileDocumentWithBody } from './mobileDocumentContent'
 import type { MobileNote, MobileRelationship, MobileRelationshipValue, MobileTypeDefinitions } from './mobileWorkspaceModel'
 import { mobileNoteForWikilinkTarget, mobileWikilinkTargetForNote, parseMobileWikilink } from './mobileWikilinks'
 import { isMobileNoteHydration } from './mobileNoteRead'
@@ -62,7 +63,9 @@ export const mobileNoteEditHandlers = new Map(Object.entries({
   },
   updateProperty: ({ editableNote, typeDefinitions }, edit) => {
     if (edit.type !== 'updateProperty') return editableNote
-    return deriveEditedNote(editableNote, writeFrontmatterValue(editableNote.rawContent, edit.key, edit.value), typeDefinitions)
+    const withFrontmatter = writeFrontmatterValue(editableNote.rawContent, edit.key, edit.value)
+    const syncedContent = syncInitialH1OnTitleUpdate(withFrontmatter, edit.key, edit.value)
+    return deriveEditedNote(editableNote, syncedContent, typeDefinitions)
   },
   updateTextFileContent: ({ note }, edit) => {
     if (edit.type !== 'updateTextFileContent') return note
@@ -232,4 +235,19 @@ export function normalizedRelationshipRef(ref: WikilinkRef | undefined): Wikilin
 
 export function wikilinkTarget(value: WikilinkRef): WikilinkTarget {
   return parseMobileWikilink(value)?.target ?? value.trim()
+}
+
+function syncInitialH1OnTitleUpdate(rawContent: string, key: string, value: unknown): string {
+  if (normalizedFrontmatterKey(key) !== 'title' || typeof value !== 'string' || !value.trim()) {
+    return rawContent
+  }
+  const cleanTitle = value.trim().replace(/\r?\n/gu, ' ')
+  const body = mobileDocumentBody(rawContent)
+  const lines = body.split(/\r?\n/)
+  const firstContentIndex = lines.findIndex((line) => line.trim().length > 0)
+  if (firstContentIndex < 0) return rawContent
+  const firstLine = lines[firstContentIndex]?.trim() ?? ''
+  if (firstLine !== '#' && !firstLine.startsWith('# ')) return rawContent
+  lines[firstContentIndex] = `# ${cleanTitle}`
+  return mobileDocumentWithBody(rawContent, lines.join('\n'))
 }

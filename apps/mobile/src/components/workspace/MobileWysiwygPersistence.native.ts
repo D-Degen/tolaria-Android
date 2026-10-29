@@ -47,10 +47,21 @@ export function useFlushEditorDocument(options: FlushEditorDocumentOptions) {
   useEffect(() => { gate.updateAdapter(nativeEditorDocumentAdapter(options)) }, [gate, options])
   useWorkspaceSyncEditor(gate.prepare, options.noteId)
   return useCallback(() => {
-    void gate.save().catch((error: unknown) => {
-      console.warn('[mobile-editor] Failed to read TenTap JSON:', error)
-    })
-  }, [gate])
+    const saveTimerRef = options.refs.saveTimerRef
+    const hadPendingSaveTimer = saveTimerRef.current !== null
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current)
+      saveTimerRef.current = null
+    }
+    const contentRef = options.refs.contentRef
+    const promise = gate.save()
+      .then(() => contentRef.current)
+      .catch((error: unknown) => {
+        console.warn('[mobile-editor] Failed to read TenTap JSON:', error)
+        return contentRef.current
+      })
+    return hadPendingSaveTimer ? promise : contentRef.current
+  }, [gate, options.refs])
 }
 
 function nativeEditorDocumentAdapter(options: FlushEditorDocumentOptions) {
@@ -94,6 +105,7 @@ function publishContentChange(
 ) {
   if (nextContent.skipped || nextContent.content === options.refs.contentRef.current) return
 
+  options.refs.contentRef.current = nextContent.content
   options.onUpdateContent(options.noteId, nextContent.content)
   if (shouldPublishMarkdownBlockProof(options)) {
     publishNativeWysiwygMarkdownBlockProof({

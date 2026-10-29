@@ -7,7 +7,6 @@ import type {
 	MobileWorkspaceSnapshot,
 } from "../workspace/mobileWorkspaceModel";
 
-type BulkEdit = Extract<MobileWorkspaceEdit, { type: "bulkEdit" }>;
 type DeleteNoteEdit = Extract<MobileWorkspaceEdit, { type: "deleteNote" }>;
 type SetArchivedEdit = Extract<MobileWorkspaceEdit, { type: "setArchived" }>;
 type SetDefaultNoteWidthEdit = Extract<
@@ -28,7 +27,7 @@ type UpdatePropertyEdit = Extract<
 	{ type: "updateProperty" }
 >;
 
-export type EditorContentUpdateEdit = UpdateContentEdit | BulkEdit;
+export type EditorContentUpdateEdit = UpdateContentEdit;
 
 export function deleteSelectedNoteEdit(
 	note: MobileNote | null,
@@ -96,6 +95,22 @@ export function editorContentUpdateEdit(
 		content,
 		noteId: trimmedNoteId,
 		type: "updateNoteContent",
+	};
+}
+
+export function updateNoteTitleEdit(
+	noteId: string,
+	title: string,
+): UpdatePropertyEdit | null {
+	const trimmedNoteId = noteId.trim();
+	const trimmedTitle = title.trim();
+	if (!trimmedNoteId || !trimmedTitle) return null;
+
+	return {
+		key: "title",
+		noteId: trimmedNoteId,
+		type: "updateProperty",
+		value: trimmedTitle,
 	};
 }
 

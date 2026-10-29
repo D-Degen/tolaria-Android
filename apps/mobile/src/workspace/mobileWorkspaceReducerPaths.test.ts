@@ -158,6 +158,40 @@ describe('applyMobileWorkspaceEdit', () => {
     ])
   })
 
+  it('syncs initial H1 heading in markdown body and renames file when title property is updated', () => {
+    const { movedSource, snapshot } = workspaceMoveLinkScenario()
+    const editableSource = {
+      ...movedSource,
+      rawContent: [
+        '---',
+        'title: Old Title',
+        'type: Essay',
+        '---',
+        '# Old Title',
+        '',
+        'Paragraph content.',
+      ].join('\n'),
+    }
+    const result = applyMobileWorkspaceEditWithWrites({
+      ...snapshot,
+      allNotes: [editableSource],
+      notes: [editableSource],
+    }, {
+      key: 'title',
+      noteId: movedSource.id,
+      type: 'updateProperty',
+      value: 'New Synced Title',
+    })
+    const renamed = noteById(result.snapshot, movedSource.id)
+
+    expect(renamed).toMatchObject({
+      path: 'Tolaria/Mobile UI/new-synced-title.md',
+      title: 'New Synced Title',
+    })
+    expect(renamed.rawContent).toContain('title: New Synced Title')
+    expect(renamed.rawContent).toContain('# New Synced Title\n\nParagraph content.')
+  })
+
   it.each(occupiedNoteDestinations)('does not overwrite an existing destination when $label', ({ edit, existing }) => {
     const base = workspaceScenarioForId('default')
     const existingDestination = {

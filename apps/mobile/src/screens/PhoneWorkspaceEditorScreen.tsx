@@ -63,7 +63,11 @@ function PhoneEditorBody(props: PhoneEditorBodyProps) {
 			onToggleFavorite={controller.onToggleFavorite}
 			onUpdateContent={controller.onUpdateNoteContent}
 			onUpdateTitle={(noteId, title) => {
-				controller.onEditProperty(noteId, "title", title);
+				if (controller.onUpdateNoteTitle) {
+					controller.onUpdateNoteTitle(noteId, title);
+				} else {
+					controller.onEditProperty(noteId, "title", title);
+				}
 			}}
 			renameFilename={{
 				value: controller.readOnlyForm.filenameStem,

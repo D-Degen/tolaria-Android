@@ -14,6 +14,8 @@ export type NativeSmartNotesModule = {
   suggestTitle(text: string): Promise<string>
   generateTags(text: string): Promise<string[]>
   extractTodos(text: string): Promise<string[]>
+  generateStructuredNote?(text: string, availableTypes: string[]): Promise<string>
+  consumeSharedText?(): Promise<string | null>
 }
 
 export function optionalNativeSmartNotesModule(): NativeSmartNotesModule | null {

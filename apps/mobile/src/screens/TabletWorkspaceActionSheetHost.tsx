@@ -147,6 +147,7 @@ function actionSheetNoteHandlers(props: ActionSheetHostProps) {
     onCopyDeepLink: props.onCopyDeepLink,
     onCopyFilePath: props.onCopyFilePath,
     onCreateNote: props.onCreateNote,
+    onCreateSmartNote: props.onCreateSmartNote,
     onCreateTitleChange: props.onCreateTitleChange,
     onDeleteNote: props.onDeleteNote,
     onEditProperty: props.onEditProperty,
@@ -172,6 +173,7 @@ function actionSheetNoteHandlers(props: ActionSheetHostProps) {
     onToggleNoteWidth: props.onToggleNoteWidth,
     onToggleRawEditor: props.editorCommands?.toggleRawEditor,
     onUpdateNoteContent: props.onUpdateNoteContent,
+    onUpdateNoteTitle: props.onUpdateNoteTitle,
   }
 }
 

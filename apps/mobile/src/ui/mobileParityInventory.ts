@@ -235,6 +235,13 @@ export const mobileParityInventory = [
     surface: 'Smart notes on-device AI sheet',
   },
 {
+    assertions: ['smart note creation preview, tag suggestion, and url analysis'],
+    contracts: ['desktopPanelParity', 'desktopToolbarActionParity'],
+    desktopSource: 'AI agent chat, note summarization and on-device NLP actions',
+    mobileFile: 'src/components/workspace/MobileSmartCreateNoteContent.tsx',
+    surface: 'Smart note creation and link analysis sheet',
+  },
+{
     assertions: ['native action-sheet primary actions and touch targets'],
     contracts: ['desktopPanelParity', 'desktopToolbarActionParity'],
     desktopSource: 'Desktop dialog action rows and modal footer controls',

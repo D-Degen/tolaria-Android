@@ -7,8 +7,9 @@ import { MobileToolbarTitle } from '../../ui/MobilePanel'
 import type { MobileMetrics } from '../../ui/mobileMetrics'
 import type { MobileColors } from '../../ui/theme/mobilePalette'
 import { useMobileColors, useMobileMetrics, useMobileStyles } from '../../ui/theme/useMobileTheme'
+import { isGenericDraftPath, isGenericDraftTitle } from '../../workspace/mobileDraftCleanup'
 import { isMobileMarkdownActionNote } from '../../workspace/mobileNoteActionMode'
-import { validateMobileRenameNoteFilePath } from '../../workspace/mobileNotePaths'
+import { mobileFilenameStemForTitle, validateMobileRenameNoteFilePath } from '../../workspace/mobileNotePaths'
 import { useMobileModalDismiss } from '../../workspace/useMobileModalDismiss'
 import type { MobileNote, MobileTypeDefinitions } from '../../workspace/mobileWorkspaceModel'
 import { noteFilename, noteWritePath } from '../../workspace/mobileWorkspacePathRewrites'
@@ -38,7 +39,7 @@ export function MobileEditorFileIdentity(props: MobileEditorFileIdentityProps) {
   const editing = renameState.noteId === props.note.id && renameState.editing
   const close = () => setRenameState({ noteId: props.note.id, editing: false })
   useMobileModalDismiss(close, editing)
-  const filename = noteFilename(noteWritePath(props.note))
+  const filename = displayEditorFilename(props.note)
   const rename = isMobileMarkdownActionNote(props.note) ? props.rename : undefined
   const begin = () => {
     rename?.onChange(filename)
@@ -133,4 +134,14 @@ function EditorFileIcon({ note, typeDefinitions }: MobileEditorFileIdentityProps
       typeDefinitions={typeDefinitions}
     />
   )
+}
+
+function displayEditorFilename(note: MobileNote): string {
+  const writePath = noteWritePath(note)
+  const diskFilename = noteFilename(writePath)
+  if (isGenericDraftPath(writePath) && !isGenericDraftTitle(note.title)) {
+    const liveStem = mobileFilenameStemForTitle(note.title)
+    if (liveStem && liveStem !== 'untitled') return liveStem
+  }
+  return diskFilename
 }

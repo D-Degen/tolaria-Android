@@ -61,6 +61,43 @@ export function createWorkspaceNote({
   closeAction()
 }
 
+export function createSmartWorkspaceNote({
+  applyEdit,
+  closeAction,
+  markdownBody,
+  selection,
+  tags,
+  title,
+  typeDefinitions,
+  typeName,
+}: {
+  applyEdit: ApplyWorkspaceEdit
+  closeAction: () => void
+  markdownBody: string
+  selection: TabletSidebarSelection
+  tags: string[]
+  title: string
+  typeDefinitions?: MobileTypeDefinitions
+  typeName: string
+}) {
+  const selectionDefaults = createNoteDefaultsForSelection(selection, typeDefinitions)
+  const typeDefaults = typeName ? mobileCreateNoteDefaultsForType(typeName, typeDefinitions) : {}
+  const defaults: MobileCreateNoteDefaults = {
+    ...selectionDefaults,
+    ...typeDefaults,
+    ...(selectionDefaults.folderPath ? { folderPath: selectionDefaults.folderPath } : {}),
+    type: typeName || typeDefaults.type || selectionDefaults.type || 'Note',
+    tags: tags.length > 0 ? tags : typeDefaults.tags,
+    template: markdownBody || typeDefaults.template,
+  }
+  applyEdit({
+    defaults,
+    title: title.trim() || 'Neue Notiz',
+    type: 'createNote',
+  })
+  closeAction()
+}
+
 export function createTypedWorkspaceNote({
   applyEdit,
   closeAction,

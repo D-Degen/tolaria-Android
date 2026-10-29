@@ -144,6 +144,12 @@ export type TabletWorkspaceChromeProps = {
 	onCopySelectedFolderPath: () => void;
 	onCreateFolder: () => void;
 	onCreateNote: (titleOverride?: string) => void;
+	onCreateSmartNote?: (draft: {
+		title: string;
+		type: string;
+		tags: string[];
+		markdownBody: string;
+	}) => void;
 	onCreateNoteOfType: (typeName: string) => void;
 	onCreateRelationshipTarget: () => void;
 	onCreateTitleChange: (value: ReadOnlyFormValue) => void;
@@ -182,6 +188,7 @@ export type TabletWorkspaceChromeProps = {
 	onOpenCreateNoteInFolder: () => void;
 	onOpenCreateFolder: () => void;
 	onOpenCreateNote: () => void;
+	onOpenSmartCreateNote?: () => void;
 	onOpenCreateType: () => void;
 	onOpenCreateTypeWithName: (typeName: string) => void;
 	onOpenCreateView: () => void;
@@ -225,6 +232,7 @@ export type TabletWorkspaceChromeProps = {
 	onRemoveNoteIcon: () => void;
 	onSetNoteIcon: () => void;
 	onUpdateNoteContent: (noteId: NoteId, content: string) => void;
+	onUpdateNoteTitle?: (noteId: NoteId, title: string) => void;
 	onTypeDisplayPropertiesChange: (value: string[]) => void;
 	onTypeNameChange: (value: ReadOnlyFormValue) => void;
 	onTypeSchemaPropertyAdd: () => void;

@@ -12,3 +12,13 @@ export type SmartNotesResult = {
   text: string
   items?: string[]
 }
+
+export type SmartNoteDraft = {
+  title: string
+  type: string
+  tags: string[]
+  todos: string[]
+  markdownBody: string
+  engine: 'gemini-nano' | 'local-on-device'
+}
+

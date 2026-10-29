@@ -31,6 +31,7 @@ import { useMobileModalDismiss } from "../../workspace/useMobileModalDismiss";
 import { Text } from "../ui/text";
 import { MobileEditorFindSheet } from "./MobileEditorFindSheet";
 import { MobileQuickOpenSheet } from "./MobileQuickOpenSheet";
+import { MobileSmartCreateNoteContent } from "./MobileSmartCreateNoteContent";
 import { MobileSmartNotesContent } from "./MobileSmartNotesContent";
 import { MobileTableOfContentsSheet } from "./MobileTableOfContentsSheet";
 import { MobileTypeSectionEditor } from "./MobileTypeSectionEditor";
@@ -75,7 +76,9 @@ export function MobileWorkspaceActionSheet(
 	const { styles, sheetStyles } = useMobileStyles(createThemeStyles);
 	const phone = useMobileDeviceLayout() === "phone";
 	useEffect(() => {
-		if (props.action !== "search") Keyboard.dismiss();
+		if (props.action !== "search" && props.action !== "smartCreateNote") {
+			Keyboard.dismiss();
+		}
 	}, [props.action]);
 	const { height: windowHeight, width: windowWidth } = useWindowDimensions();
 	const compactForm = mobileActionSheetUsesCompactForm({
@@ -151,7 +154,9 @@ function usesLongFormSheet(action: MobileWorkspaceAction) {
 		action === "createView" ||
 		action === "editView" ||
 		action === "editTypeSection" ||
-		action === "editPrimaryListProperties"
+		action === "editPrimaryListProperties" ||
+		action === "smartCreateNote" ||
+		action === "smartNotes"
 	);
 }
 
@@ -215,12 +220,21 @@ const actionContentByAction: Record<
 	),
 	search: (props) => <SearchContent {...props} />,
 	setNoteIcon: (props) => <WorkspaceSingleTextFieldContent {...props} />,
+	smartCreateNote: (props) => (
+		<MobileSmartCreateNoteContent
+			typeDefinitions={props.typeDefinitions}
+			onClose={props.onClose}
+			onCreateNoteFallback={props.onCreateNote}
+			onCreateSmartNote={props.onCreateSmartNote}
+		/>
+	),
 	smartNotes: (props) => (
 		<MobileSmartNotesContent
 			note={props.selectedNote}
 			onClose={props.onClose}
 			onEditProperty={props.onEditProperty}
 			onUpdateContent={props.onUpdateNoteContent}
+			onUpdateNoteTitle={props.onUpdateNoteTitle}
 		/>
 	),
 	tableOfContents: (props) => (

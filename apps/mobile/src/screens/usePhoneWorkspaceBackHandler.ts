@@ -10,6 +10,8 @@ export type PhoneWorkspaceBackHandlerOptions = {
   closeCommandPalette?: () => void
   openAction?: unknown
   closeAction?: () => void
+  bulkSelectionActive?: boolean
+  clearBulkSelection?: () => void
   searchQuery?: string
   clearSearch?: () => void
   neighborhood?: unknown
@@ -38,6 +40,10 @@ export function handlePhoneWorkspaceBackPress(options: PhoneWorkspaceBackHandler
     return true
   }
   if (options.phoneState === 'list') {
+    if (options.bulkSelectionActive && options.clearBulkSelection) {
+      options.clearBulkSelection()
+      return true
+    }
     if (options.searchQuery && options.clearSearch) {
       options.clearSearch()
       return true

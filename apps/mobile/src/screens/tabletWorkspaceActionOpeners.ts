@@ -67,6 +67,7 @@ export function coreWorkspaceActionOpeners({
       updateReadOnlyForm,
     }),
     onOpenCreateNote: () => onCreateNoteDirect(''),
+    onOpenSmartCreateNote: () => setOpenAction('smartCreateNote'),
     onOpenCreateType: () => openAction('createType', [{ key: 'typeName', value: '' }]),
     onOpenCreateTypeWithName: (typeName: string) => openAction('createType', [{ key: 'typeName', value: typeName }]),
     onOpenCreateView: () => openCreateView({ setOpenAction, updateReadOnlyForm }),

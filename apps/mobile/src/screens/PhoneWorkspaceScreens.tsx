@@ -50,6 +50,7 @@ function PhoneNoteListScreen({
         title={controller.noteListTitle}
         typeDefinitions={controller.snapshot.typeDefinitions}
         onOpenCreateNote={controller.onOpenCreateNote}
+        onOpenSmartCreateNote={controller.onOpenSmartCreateNote}
         onOpenSearch={controller.onOpenSearch}
         onOpenVault={controller.onOpenCreateNote}
         onNoteListFilterChange={controller.onNoteListFilterChange}

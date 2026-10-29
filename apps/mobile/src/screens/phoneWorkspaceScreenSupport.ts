@@ -1,5 +1,11 @@
-import { type Dispatch, type SetStateAction, useCallback } from "react";
-import { useWindowDimensions } from "react-native";
+import {
+	type Dispatch,
+	type SetStateAction,
+	useCallback,
+	useEffect,
+	useRef,
+} from "react";
+import { AppState, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { MobileLayoutProbe } from "../qa/mobileLayoutProbe";
 import { resolveDraftLeaveAction } from "../workspace/mobileDraftCleanup";
@@ -38,24 +44,85 @@ export type PhonePanelRail = ReturnType<typeof usePhonePanelRail>;
 
 type NavigationOptions = {
 	controller: PhoneWorkspaceController;
+	saveActiveEditor?: () => unknown;
 	setPhoneState: (state: PhoneWorkspaceState) => void;
 	setSourceModeRequest: Dispatch<SetStateAction<number>>;
 };
 
+function isPromiseLike<T>(value: unknown): value is PromiseLike<T> {
+	return (
+		typeof value === "object" &&
+		value !== null &&
+		"then" in value &&
+		typeof (value as { then?: unknown }).then === "function"
+	);
+}
+
+function applyDraftLeaveAction(
+	controller: PhoneWorkspaceController,
+	note: MobileNote | null,
+	flushedContent?: unknown,
+	allowDelete = true,
+) {
+	const candidateNote =
+		note && typeof flushedContent === "string"
+			? { ...note, rawContent: flushedContent }
+			: note;
+	const action = resolveDraftLeaveAction(candidateNote);
+	if (action.type === "delete" && allowDelete) {
+		controller.onDeleteNote();
+	} else if (action.type === "rename") {
+		if (controller.onUpdateNoteTitle) {
+			controller.onUpdateNoteTitle(action.noteId, action.title);
+		} else {
+			controller.onEditProperty(action.noteId, "title", action.title);
+		}
+	}
+}
+
 export function usePhoneWorkspaceNavigation({
 	controller,
+	saveActiveEditor,
 	setPhoneState,
 	setSourceModeRequest,
 }: NavigationOptions) {
+	const latestRef = useRef({ controller, saveActiveEditor });
+	useEffect(() => {
+		latestRef.current = { controller, saveActiveEditor };
+	});
+
+	useEffect(() => {
+		const subscription = AppState.addEventListener?.("change", (nextState) => {
+			if (nextState !== "background" && nextState !== "inactive") return;
+			const { controller: currentController, saveActiveEditor: currentSave } =
+				latestRef.current;
+			const currentNote = currentController.selectedNote;
+			const flushed = currentSave?.();
+			if (isPromiseLike(flushed)) {
+				void flushed.then((content) => {
+					applyDraftLeaveAction(currentController, currentNote, content, false);
+				});
+				return;
+			}
+			applyDraftLeaveAction(currentController, currentNote, flushed, false);
+		});
+		return () => {
+			subscription?.remove();
+		};
+	}, []);
 	const openList = useCallback(() => {
-		const action = resolveDraftLeaveAction(controller.selectedNote);
-		if (action.type === "delete") {
-			controller.onDeleteNote();
-		} else if (action.type === "rename") {
-			controller.onEditProperty(action.noteId, "title", action.title);
+		const leavingNote = controller.selectedNote;
+		const flushed = saveActiveEditor?.();
+		if (isPromiseLike(flushed)) {
+			void flushed.then((content) => {
+				applyDraftLeaveAction(controller, leavingNote, content);
+				setPhoneState("list");
+			});
+			return;
 		}
+		applyDraftLeaveAction(controller, leavingNote, flushed);
 		setPhoneState("list");
-	}, [controller, setPhoneState]);
+	}, [controller, saveActiveEditor, setPhoneState]);
 	const openSidebar = useCallback(
 		() => setPhoneState("sidebar"),
 		[setPhoneState],
@@ -67,17 +134,22 @@ export function usePhoneWorkspaceNavigation({
 	const openEditor = useCallback(
 		(noteId?: string) => {
 			if (noteId && noteId !== controller.selectedNoteId) {
-				const action = resolveDraftLeaveAction(controller.selectedNote);
-				if (action.type === "delete") {
-					controller.onDeleteNote();
-				} else if (action.type === "rename") {
-					controller.onEditProperty(action.noteId, "title", action.title);
+				const leavingNote = controller.selectedNote;
+				const flushed = saveActiveEditor?.();
+				if (isPromiseLike(flushed)) {
+					void flushed.then((content) => {
+						applyDraftLeaveAction(controller, leavingNote, content);
+						controller.onSelectNote(noteId);
+						setPhoneState("editor");
+					});
+					return;
 				}
+				applyDraftLeaveAction(controller, leavingNote, flushed);
 				controller.onSelectNote(noteId);
 			}
 			setPhoneState("editor");
 		},
-		[controller, setPhoneState],
+		[controller, saveActiveEditor, setPhoneState],
 	);
 	const openSourceEditor = useCallback(() => {
 		setSourceModeRequest((current) => current + 1);

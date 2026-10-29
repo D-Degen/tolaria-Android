@@ -1,4 +1,5 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { BackHandler, Platform } from 'react-native'
 import type { MobileNeighborhood } from '../../workspace/mobileNeighborhood'
 import type { MobileNote } from '../../workspace/mobileWorkspaceModel'
 import {
@@ -48,6 +49,18 @@ export function useMobileNoteListBulkSelection({
   const clearSelection = useCallback(() => {
     setSelectionState({ noteIds: new Set(), scope: selectionScope })
   }, [selectionScope])
+
+  useEffect(() => {
+    if (Platform.OS !== 'android' || selectedNotes.length === 0) return
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      clearSelection()
+      return true
+    })
+    return () => {
+      subscription.remove()
+    }
+  }, [clearSelection, selectedNotes.length])
 
   const beginSelection = useCallback((noteId: string) => {
     if (!selectionEnabled) return

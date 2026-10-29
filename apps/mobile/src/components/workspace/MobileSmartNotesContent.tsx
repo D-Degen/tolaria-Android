@@ -6,6 +6,12 @@ import { MobileButton } from '../../ui/MobileButton'
 import { useMobileStyles } from '../../ui/theme/useMobileTheme'
 import type { MobileColors } from '../../ui/theme/mobilePalette'
 import type { MobileMetrics } from '../../ui/mobileMetrics'
+import { writeFrontmatterValue } from '../../workspace/mobileWorkspaceNoteContent'
+import {
+  mobileDocumentBody,
+  mobileDocumentWithBody,
+  mobileNoteEditableContent,
+} from '../../workspace/mobileDocumentContent'
 import type { MobileNote, MobilePropertyValue } from '../../workspace/mobileWorkspaceModel'
 import { executeSmartNoteAction } from '../../workspace/smartNotes/smartNotesEngine'
 import type { SmartNoteActionType, SmartNotesResult } from '../../workspace/smartNotes/smartNotesTypes'
@@ -16,18 +22,38 @@ export type MobileSmartNotesContentProps = {
   onClose: () => void
   onEditProperty?: (noteId: string, key: string, value: MobilePropertyValue) => void
   onUpdateContent?: (noteId: string, content: string) => void
+  onUpdateNoteTitle?: (noteId: string, title: string) => void
 }
 
 function noteContentText(note: MobileNote): string {
-  if (note.rawContent && note.rawContent.trim().length > 0) return note.rawContent
+  const editable = mobileNoteEditableContent(note)
+  const body = mobileDocumentBody(editable).trim()
+  if (body.length > 0) return body
   if (note.editorBullets && note.editorBullets.length > 0) {
     return note.editorBullets.join('\n')
   }
   return note.title || ''
 }
 
+function insertSummaryIntoBody(body: string, summaryBlock: string): string {
+  const lines = body.split(/\r?\n/)
+  const firstContentIndex = lines.findIndex((line) => line.trim().length > 0)
+  if (firstContentIndex >= 0) {
+    const firstLine = lines[firstContentIndex]?.trim() ?? ''
+    if (firstLine === '#' || firstLine.startsWith('# ')) {
+      return [
+        ...lines.slice(0, firstContentIndex + 1),
+        '',
+        summaryBlock.trimEnd(),
+        ...lines.slice(firstContentIndex + 1),
+      ].join('\n')
+    }
+  }
+  return `${summaryBlock}${body.replace(/^\s+/, '')}`
+}
+
 export function MobileSmartNotesContent(props: MobileSmartNotesContentProps) {
-  const { note, onClose, onEditProperty, onUpdateContent } = props
+  const { note, onClose, onEditProperty, onUpdateContent, onUpdateNoteTitle } = props
   const { styles, mobileColors } = useMobileStyles(createThemeStyles)
   const [activeAction, setActiveAction] = useState<SmartNoteActionType | null>(null)
   const [loading, setLoading] = useState(false)
@@ -51,28 +77,42 @@ export function MobileSmartNotesContent(props: MobileSmartNotesContentProps) {
   const handleApply = () => {
     if (!note || !result) return
 
-    const currentContent = noteContentText(note)
+    const rawDocument = mobileNoteEditableContent(note)
+    const currentBody = mobileDocumentBody(rawDocument)
 
     if (result.action === 'suggestTitle') {
-      onEditProperty?.(note.id, 'title', result.text)
-      if (currentContent.startsWith('# ')) {
-        const lines = currentContent.split('\n')
-        lines[0] = `# ${result.text}`
-        onUpdateContent?.(note.id, lines.join('\n'))
+      const cleanTitle = result.text.trim()
+      if (onUpdateNoteTitle) {
+        onUpdateNoteTitle(note.id, cleanTitle)
+      } else {
+        onEditProperty?.(note.id, 'title', cleanTitle)
+        const lines = currentBody.split(/\r?\n/)
+        const firstContentIndex = lines.findIndex((line) => line.trim().length > 0)
+        if (firstContentIndex >= 0 && (lines[firstContentIndex]?.trim() === '#' || lines[firstContentIndex]?.trim().startsWith('# '))) {
+          lines[firstContentIndex] = `# ${cleanTitle}`
+          const withTitle = writeFrontmatterValue(rawDocument, 'title', cleanTitle)
+          onUpdateContent?.(note.id, mobileDocumentWithBody(withTitle, lines.join('\n')))
+        }
       }
       setApplied(true)
     } else if (result.action === 'generateTags' && result.items) {
       const existingTags = note.tags ?? []
       const merged = Array.from(new Set([...existingTags, ...result.items]))
-      onEditProperty?.(note.id, 'tags', merged)
+      if (onUpdateContent) {
+        const nextDocument = writeFrontmatterValue(rawDocument, 'tags', merged)
+        onUpdateContent(note.id, nextDocument)
+      } else {
+        onEditProperty?.(note.id, 'tags', merged)
+      }
       setApplied(true)
     } else if (result.action === 'summarize') {
       const summaryBlock = `> **Zusammenfassung:**\n> ${result.text.replace(/\n/g, '\n> ')}\n\n`
-      onUpdateContent?.(note.id, `${summaryBlock}${currentContent}`)
+      const nextBody = insertSummaryIntoBody(currentBody, summaryBlock)
+      onUpdateContent?.(note.id, mobileDocumentWithBody(rawDocument, nextBody))
       setApplied(true)
     } else if (result.action === 'extractTodos') {
       const todoBlock = `\n\n## To-Dos\n${result.text}\n`
-      onUpdateContent?.(note.id, `${currentContent}${todoBlock}`)
+      onUpdateContent?.(note.id, `${rawDocument.trimEnd()}${todoBlock}`)
       setApplied(true)
     }
   }

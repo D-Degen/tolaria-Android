@@ -16,6 +16,7 @@ import {
   setOrganizedEdit,
   toggleFavoriteEdit,
   toggleNoteWidthEdit,
+  updateNoteTitleEdit,
 } from './tabletWorkspaceEditorEditActions'
 
 type ApplyWorkspaceEdit = (edit: MobileWorkspaceEdit) => void
@@ -96,6 +97,9 @@ export function editorWorkspaceActions({
     },
     onUpdateNoteContent: (noteId: string, content: string) => {
       applyOptionalEdit(applyEdit, editorContentUpdateEdit(workspaceSnapshot, noteId, content))
+    },
+    onUpdateNoteTitle: (noteId: string, title: string) => {
+      applyOptionalEdit(applyEdit, updateNoteTitleEdit(noteId, title))
     },
     ...tabletWorkspaceBulkNoteActions(applyEdit),
   }

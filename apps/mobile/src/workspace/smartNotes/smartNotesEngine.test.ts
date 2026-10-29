@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { executeSmartNoteAction, getSmartNotesStatus } from './smartNotesEngine'
+import {
+  executeSmartNoteAction,
+  generateSmartNoteDraft,
+  getSmartNotesStatus,
+  localSuggestType,
+} from './smartNotesEngine'
 
 describe('smartNotesEngine', () => {
   const sampleNote = `
@@ -56,5 +61,29 @@ Das Feature "Smart Notes" nutzt Gemini Nano auf unterstützten Geräten und läu
   it('handles empty note gracefully', async () => {
     const result = await executeSmartNoteAction('summarize', '')
     expect(result.text).toBe('')
+  })
+
+  it('generates a complete structured note draft with title, type, tags, and todos', async () => {
+    const rawThought = `Meeting mit dem Mobile-Team zur neuen Release-Planung.
+Wir müssen unbedingt die lokale KI für den Plus-Button einbauen.
+TODO: APK auf Pixel 9 testen
+Aufgabe: Dokumentation für Nutzer ergänzen`
+
+    const draft = await generateSmartNoteDraft(rawThought, ['Note', 'Meeting', 'Project', 'Task'])
+    expect(draft.title).toContain('Meeting mit dem Mobile-Team')
+    expect(draft.type).toBe('Meeting')
+    expect(draft.tags.length).toBeGreaterThan(0)
+    expect(draft.todos).toEqual([
+      '- [ ] APK auf Pixel 9 testen',
+      '- [ ] Dokumentation für Nutzer ergänzen',
+    ])
+    expect(draft.markdownBody).toContain('## To-Dos')
+    expect(draft.markdownBody).toContain('- [ ] APK auf Pixel 9 testen')
+  })
+
+  it('suggests the matching vault note type from input keywords', () => {
+    expect(localSuggestType('Projekt Roadmap für Q4 planen', ['Note', 'Project', 'Meeting'])).toBe('Project')
+    expect(localSuggestType('Neue Idee für das Dashboard', ['Note', 'Idea', 'Task'])).toBe('Idea')
+    expect(localSuggestType('Einfacher Einkaufszettel', ['Note', 'Meeting'])).toBe('Note')
   })
 })

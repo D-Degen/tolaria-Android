@@ -9,9 +9,16 @@ version = '0.1.0'
 android {
   namespace "md.tolaria.smartnotes"
   defaultConfig {
+    minSdkVersion 24
     versionCode 1
     versionName "0.1.0"
   }
 }
+
+dependencies {
+  implementation("com.google.mlkit:genai-prompt:1.0.0-beta4")
+  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+}
+
 
 

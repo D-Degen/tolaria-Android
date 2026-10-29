@@ -3,7 +3,7 @@ import type { MobileWorkspaceEdit } from '../workspace/mobileWorkspaceEditing'
 import { canMoveMobileSavedView, evaluateMobileSavedView } from '../workspace/mobileSavedViews'
 import { mobileListPropertySuggestions, mobileSortablePropertySuggestions } from '../workspace/mobileWorkspaceSuggestions'
 import type { TabletReadOnlyForm } from './tabletWorkspaceTypes'
-import { createTypedWorkspaceNote, createWorkspaceNote, createWorkspaceView } from './tabletWorkspaceCreateActions'
+import { createSmartWorkspaceNote, createTypedWorkspaceNote, createWorkspaceNote, createWorkspaceView } from './tabletWorkspaceCreateActions'
 import { favoriteWorkspaceActions } from './tabletWorkspaceFavoriteActions'
 import { folderWorkspaceActions } from './tabletWorkspaceFolderActions'
 import { primaryNoteListWorkspaceActions } from './tabletWorkspacePrimaryNoteListActions'
@@ -33,6 +33,16 @@ export function createWorkspaceActions(context: WorkspaceActionsContext) {
       selection: navigation.sidebarSelection,
       title: titleOverride ?? readOnlyForm.createTitle,
       typeDefinitions: workspaceSnapshot.typeDefinitions,
+    }),
+    onCreateSmartNote: (draft: { title: string; type: string; tags: string[]; markdownBody: string }) => createSmartWorkspaceNote({
+      applyEdit,
+      closeAction,
+      markdownBody: draft.markdownBody,
+      selection: navigation.sidebarSelection,
+      tags: draft.tags,
+      title: draft.title,
+      typeDefinitions: workspaceSnapshot.typeDefinitions,
+      typeName: draft.type,
     }),
     onCreateNoteOfType: (typeName: string) => createTypedWorkspaceNote({
       applyEdit,

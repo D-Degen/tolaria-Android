@@ -1,5 +1,7 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { AppState } from 'react-native'
 import { useMobileSearchEvent } from '../analytics/useMobileDiscoveryEvents'
+import { consumeIncomingSharedText } from '../workspace/smartNotes/smartNotesEngine'
 import type { MobileWorkspaceAction } from '../components/workspace/MobileWorkspaceActionSheet'
 import type { MobileSidebarItemSelection } from '../components/workspace/MobileWorkspaceSidebar'
 import type { MobileNote, MobilePropertyValue, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
@@ -32,6 +34,20 @@ export function useTabletWorkspaceController(request: TabletWorkspaceControllerR
   const { applyWorkspaceEdit, workspaceSnapshot } = pipeline
   const [openAction, setOpenAction] = useState<MobileWorkspaceAction | null>(null)
   useMobileSearchEvent(openAction === 'search')
+  useEffect(() => {
+    const checkSharedIntent = () => {
+      void consumeIncomingSharedText().then((shared) => {
+        if (shared) setOpenAction('smartCreateNote')
+      })
+    }
+    checkSharedIntent()
+    const subscription = AppState.addEventListener?.('change', (state) => {
+      if (state === 'active') checkSharedIntent()
+    })
+    return () => {
+      subscription?.remove()
+    }
+  }, [])
   const { readOnlyForm, resetForm, updateReadOnlyForm } = useReadOnlyFormState()
   const [searchQuery, setSearchQuery] = useState('')
   const navigation = useTabletWorkspaceNavigation(workspaceSnapshot, searchQuery)

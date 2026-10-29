@@ -182,6 +182,20 @@ describe("resolveDraftLeaveAction", () => {
 		});
 	});
 
+	it("returns rename when note.title was derived from H1 but path is still untitled-note-...", () => {
+		const draftWithDerivedTitle = createTestNote({
+			id: "untitled-note-1740000000.md",
+			path: "untitled-note-1740000000.md",
+			rawContent: "---\ntype: Note\n---\n\n# Titel der Notiz\n\n",
+			title: "Titel der Notiz",
+		});
+		expect(resolveDraftLeaveAction(draftWithDerivedTitle)).toEqual({
+			noteId: draftWithDerivedTitle.id,
+			title: "Titel der Notiz",
+			type: "rename",
+		});
+	});
+
 	it("returns none for already titled non-generic notes", () => {
 		const namedNote = createTestNote({
 			id: "projekt-alpha.md",

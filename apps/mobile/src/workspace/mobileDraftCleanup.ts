@@ -1,6 +1,17 @@
 import type { MobileNote } from "./mobileWorkspaceModel";
 
 /**
+ * Returns true if a draft note path or id still has a generic untitled filename
+ * (e.g. untitled-note-1740000000.md, folders/untitled-project-1740000000.md).
+ */
+export function isGenericDraftPath(idOrPath: string | null | undefined): boolean {
+	const clean = (idOrPath ?? "").trim();
+	if (clean.length === 0) return true;
+	const filename = clean.split("/").filter(Boolean).at(-1) ?? clean;
+	return /^untit(le|el)d(?:\b|[-_])/i.test(filename);
+}
+
+/**
  * Returns true if a draft title or id is generic (e.g. Untitled Note, untiteld, untitled-note-...)
  */
 export function isGenericDraftTitle(
@@ -19,11 +30,7 @@ export function isGenericDraftTitle(
 		);
 	}
 
-	return (
-		cleanId.length === 0 ||
-		/^untit(le|el)d/i.test(cleanId) ||
-		/untit(le|el)d-note-/i.test(cleanId)
-	);
+	return isGenericDraftPath(cleanId);
 }
 
 /**
@@ -111,9 +118,15 @@ export function resolveDraftLeaveAction(
 		return { noteId: note.id, type: "delete" };
 	}
 
-	if (isGenericDraftTitle(note.title, note.id)) {
+	const hasGenericTitleOrPath =
+		isGenericDraftTitle(note.title, note.id) ||
+		isGenericDraftPath(note.path ?? note.id);
+
+	if (hasGenericTitleOrPath) {
 		const raw = contentOverride ?? note.rawContent ?? "";
-		const candidateTitle = extractFirstTitleFromMarkdown(raw);
+		const candidateTitle =
+			extractFirstTitleFromMarkdown(raw) ??
+			(!isGenericDraftTitle(note.title) ? note.title.trim() : null);
 		if (candidateTitle && !isGenericDraftTitle(candidateTitle)) {
 			return {
 				noteId: note.id,

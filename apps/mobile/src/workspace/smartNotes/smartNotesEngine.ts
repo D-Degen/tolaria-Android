@@ -1,5 +1,34 @@
 import { optionalNativeSmartNotesModule } from '../../native/mobileSmartNotesNative'
-import type { SmartNoteActionType, SmartNotesResult, SmartNotesStatus } from './smartNotesTypes'
+import type { SmartNoteActionType, SmartNoteDraft, SmartNotesResult, SmartNotesStatus } from './smartNotesTypes'
+import {
+  extractUrlsFromText,
+  grabUrlContent,
+  type GrabbedUrlContent,
+} from './urlContentGrabber'
+
+let pendingSharedText: string | null = null
+
+export async function consumeIncomingSharedText(): Promise<string | null> {
+  const native = optionalNativeSmartNotesModule()
+  if (!native?.consumeSharedText) return null
+  try {
+    const shared = await native.consumeSharedText()
+    const trimmed = shared?.trim() ?? ''
+    if (trimmed.length > 0) {
+      pendingSharedText = trimmed
+      return trimmed
+    }
+  } catch {
+    // Ignore native intent read errors
+  }
+  return null
+}
+
+export function takePendingSharedText(): string | null {
+  const current = pendingSharedText
+  pendingSharedText = null
+  return current
+}
 
 export async function getSmartNotesStatus(): Promise<SmartNotesStatus> {
   const native = optionalNativeSmartNotesModule()
@@ -203,3 +232,409 @@ function localExtractTodos(text: string): string[] {
 
   return results
 }
+
+export async function generateSmartNoteDraft(
+  rawInput: string,
+  availableTypes: string[] = ['Note'],
+): Promise<SmartNoteDraft> {
+  const trimmed = rawInput.trim()
+  const normalizedTypes = availableTypes.length > 0 ? availableTypes : ['Note']
+
+  if (!trimmed) {
+    return {
+      title: 'Neue Notiz',
+      type: normalizedTypes[0] ?? 'Note',
+      tags: [],
+      todos: [],
+      markdownBody: '',
+      engine: 'local-on-device',
+    }
+  }
+
+  const { firstUrl, userNotes } = extractUrlsFromText(trimmed)
+  if (firstUrl) {
+    const grabbed = await grabUrlContent(firstUrl)
+    return generateUrlSmartNoteDraft(grabbed, userNotes, normalizedTypes)
+  }
+
+  const native = optionalNativeSmartNotesModule()
+  if (native) {
+    try {
+      if (typeof native.generateStructuredNote === 'function') {
+        const rawStructured = await native.generateStructuredNote(trimmed, normalizedTypes)
+        const parsed = parseStructuredNoteResponse(rawStructured, trimmed, normalizedTypes)
+        if (parsed) return parsed
+      }
+
+      const [title, tags, todos, summary] = await Promise.all([
+        native.suggestTitle(trimmed),
+        native.generateTags(trimmed),
+        native.extractTodos(trimmed),
+        native.summarize(trimmed),
+      ])
+
+      if (title || (tags && tags.length > 0) || summary) {
+        const finalTitle = (title || localSuggestTitle(trimmed)).trim()
+        const finalTags = tags && tags.length > 0 ? tags : localGenerateTags(trimmed)
+        const finalTodos = todos && todos.length > 0 ? todos : localExtractTodos(trimmed)
+        const finalType = localSuggestType(trimmed, normalizedTypes)
+        const markdownBody = buildStructuredMarkdownBody(trimmed, summary, finalTodos)
+        return {
+          title: finalTitle,
+          type: finalType,
+          tags: finalTags,
+          todos: finalTodos,
+          markdownBody,
+          engine: 'gemini-nano',
+        }
+      }
+    } catch {
+      // Fall back to deterministic on-device structuring
+    }
+  }
+
+  return generateLocalSmartNoteDraft(trimmed, normalizedTypes)
+}
+
+export function generateLocalSmartNoteDraft(
+  rawInput: string,
+  availableTypes: string[] = ['Note'],
+): SmartNoteDraft {
+  const trimmed = rawInput.trim()
+  const normalizedTypes = availableTypes.length > 0 ? availableTypes : ['Note']
+  const title = localSuggestTitle(trimmed)
+  const type = localSuggestType(trimmed, normalizedTypes)
+  const tags = localGenerateTags(trimmed)
+  const todos = localExtractTodos(trimmed)
+  const summary = trimmed.length > 180 ? localSummarize(trimmed) : ''
+  const markdownBody = buildStructuredMarkdownBody(trimmed, summary, todos)
+
+  return {
+    title,
+    type,
+    tags,
+    todos,
+    markdownBody,
+    engine: 'local-on-device',
+  }
+}
+
+function parseStructuredNoteResponse(
+  rawResponse: string,
+  fallbackInput: string,
+  availableTypes: string[],
+): SmartNoteDraft | null {
+  const cleaned = rawResponse.trim()
+  if (!cleaned) return null
+
+  const titleMatch = cleaned.match(/^TITLE:\s*(.+)$/im)
+  const typeMatch = cleaned.match(/^TYPE:\s*(.+)$/im)
+  const tagsMatch = cleaned.match(/^TAGS:\s*(.+)$/im)
+  const todosSectionMatch = cleaned.match(/TODOS:\s*([\s\S]*?)(?=\nBODY:|$)/i)
+  const bodySectionMatch = cleaned.match(/BODY:\s*([\s\S]*)$/i)
+
+  if (!titleMatch && !bodySectionMatch) return null
+
+  const title = titleMatch?.[1]?.trim()?.replace(/^["']|["']$/g, '') || localSuggestTitle(fallbackInput)
+  const rawType = typeMatch?.[1]?.trim() ?? ''
+  const matchedType = availableTypes.find((t) => t.toLowerCase() === rawType.toLowerCase())
+    ?? localSuggestType(fallbackInput, availableTypes)
+
+  const tags = tagsMatch?.[1]
+    ? tagsMatch[1]
+        .split(',')
+        .map((t) => t.trim().replace(/^#/, '').toLowerCase())
+        .filter((t) => t.length > 0)
+    : localGenerateTags(fallbackInput)
+
+  const todos = todosSectionMatch?.[1]
+    ? todosSectionMatch[1]
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.startsWith('- [ ]') || line.startsWith('- [x]'))
+    : localExtractTodos(fallbackInput)
+
+  const rawBody = bodySectionMatch?.[1]?.trim() || fallbackInput
+  const markdownBody = appendTodosIfMissing(rawBody, todos)
+
+  return {
+    title,
+    type: matchedType,
+    tags,
+    todos,
+    markdownBody,
+    engine: 'gemini-nano',
+  }
+}
+
+export function localSuggestType(text: string, availableTypes: string[]): string {
+  const normalizedTypes = availableTypes.length > 0 ? availableTypes : ['Note']
+  const lower = text.toLowerCase()
+
+  const typeKeywordMap: Array<{ keywords: string[]; patterns: RegExp[] }> = [
+    {
+      keywords: ['meeting', 'besprechung', 'call', 'sync', 'jour fixe', 'protokoll', 'teilnehmer', 'agenda'],
+      patterns: [/meeting/i, /besprechung/i, /protokoll/i, /call/i],
+    },
+    {
+      keywords: ['projekt', 'project', 'roadmap', 'meilenstein', 'milestone', 'release', 'sprint', 'architektur'],
+      patterns: [/project/i, /projekt/i],
+    },
+    {
+      keywords: ['todo', 'aufgabe', 'task', 'checkliste', 'erledigen', 'deadline', 'frist', '- [ ]'],
+      patterns: [/task/i, /todo/i, /aufgabe/i],
+    },
+    {
+      keywords: ['idee', 'idea', 'brainstorming', 'konzept', 'vorschlag', 'inspiration', 'entwurf'],
+      patterns: [/idea/i, /idee/i, /note/i],
+    },
+    {
+      keywords: ['person', 'kontakt', 'team', 'kunde', 'partner'],
+      patterns: [/person/i, /contact/i, /kontakt/i],
+    },
+    {
+      keywords: ['youtube.com', 'youtu.be', 'video', 'podcast', 'vortrag', 'talk'],
+      patterns: [/video/i, /media/i, /bookmark/i, /resource/i, /link/i, /idea/i],
+    },
+    {
+      keywords: ['http://', 'https://', 'artikel', 'article', 'blog', 'quelle', 'webseite'],
+      patterns: [/bookmark/i, /article/i, /artikel/i, /link/i, /resource/i, /research/i, /idea/i],
+    },
+  ]
+
+  // 1. Direct mention of an available type name in text
+  for (const candidate of normalizedTypes) {
+    if (candidate.toLowerCase() !== 'note' && lower.includes(candidate.toLowerCase())) {
+      return candidate
+    }
+  }
+
+  // 2. Semantic keyword matching against available vault types
+  for (const rule of typeKeywordMap) {
+    if (rule.keywords.some((kw) => lower.includes(kw))) {
+      for (const pattern of rule.patterns) {
+        const match = normalizedTypes.find((t) => pattern.test(t))
+        if (match) return match
+      }
+    }
+  }
+
+  return normalizedTypes.find((t) => t.toLowerCase() === 'note') ?? normalizedTypes[0] ?? 'Note'
+}
+
+function buildStructuredMarkdownBody(
+  rawInput: string,
+  summary: string,
+  todos: string[],
+): string {
+  const lines = rawInput
+    .split('\n')
+    .map((line) => line.trimEnd())
+    .filter((line, index, arr) => !(index === 0 && /^#\s+/.test(line.trim())) || arr.length === 1)
+
+  const cleanedBody = lines.join('\n').trim()
+  const sections: string[] = []
+
+  if (summary && summary.trim().length > 0 && cleanedBody.length > 180) {
+    sections.push(`> **KI-Zusammenfassung:**\n> ${summary.trim().replace(/\n/g, '\n> ')}`)
+  }
+
+  if (cleanedBody) {
+    sections.push(cleanedBody)
+  }
+
+  return appendTodosIfMissing(sections.join('\n\n'), todos)
+}
+
+function appendTodosIfMissing(body: string, todos: string[]): string {
+  if (todos.length === 0) return body
+  const missingTodos = todos.filter((todo) => {
+    const taskText = todo.replace(/^- \[[ xX]\]\s*/, '').trim()
+    return taskText.length > 0 && !body.includes(`- [ ] ${taskText}`)
+  })
+  if (missingTodos.length === 0) return body
+  return `${body}\n\n## To-Dos\n${missingTodos.join('\n')}`.trim()
+}
+
+async function generateUrlSmartNoteDraft(
+  grabbed: GrabbedUrlContent,
+  userNotes: string,
+  availableTypes: string[],
+): Promise<SmartNoteDraft> {
+  const sourceHeader = formatGrabbedSourceHeader(grabbed)
+  const analysisSourceText = [
+    `Titel: ${grabbed.title}`,
+    grabbed.author ? `Autor/Kanal: ${grabbed.author}` : '',
+    grabbed.description ? `Beschreibung: ${grabbed.description}` : '',
+    grabbed.bodyText ? `Inhalt:\n${grabbed.bodyText}` : '',
+    userNotes ? `Eigene Notizen:\n${userNotes}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n\n')
+
+  const native = optionalNativeSmartNotesModule()
+  if (native && (grabbed.fetched || userNotes.length > 0)) {
+    try {
+      const [aiSummary, aiTags, aiTodos] = await Promise.all([
+        native.summarize(analysisSourceText),
+        native.generateTags(analysisSourceText),
+        native.extractTodos(analysisSourceText),
+      ])
+
+      if (aiSummary || (aiTags && aiTags.length > 0)) {
+        const mergedTags = Array.from(
+          new Set([...grabbed.keywords, ...(aiTags ?? []), ...localGenerateTags(analysisSourceText)]),
+        ).slice(0, 6)
+        const finalTodos =
+          aiTodos && aiTodos.length > 0 ? aiTodos : localExtractTodos(analysisSourceText)
+        const markdownBody = buildGrabbedUrlMarkdownBody({
+          grabbed,
+          sourceHeader,
+          summary: aiSummary || localSummarizeUrlContent(grabbed, userNotes),
+          userNotes,
+          todos: finalTodos,
+        })
+
+        return {
+          title: grabbed.title || localSuggestTitle(analysisSourceText),
+          type: suggestUrlNoteType(grabbed, availableTypes, analysisSourceText),
+          tags: mergedTags,
+          todos: finalTodos,
+          markdownBody,
+          engine: 'gemini-nano',
+        }
+      }
+    } catch {
+      // Fallback to local on-device URL structuring
+    }
+  }
+
+  const localTags = Array.from(
+    new Set([...grabbed.keywords, ...localGenerateTags(analysisSourceText)]),
+  ).slice(0, 6)
+  const localTodos = localExtractTodos(analysisSourceText)
+  const localSummary = localSummarizeUrlContent(grabbed, userNotes)
+  const markdownBody = buildGrabbedUrlMarkdownBody({
+    grabbed,
+    sourceHeader,
+    summary: localSummary,
+    userNotes,
+    todos: localTodos,
+  })
+
+  return {
+    title: grabbed.title || localSuggestTitle(analysisSourceText),
+    type: suggestUrlNoteType(grabbed, availableTypes, analysisSourceText),
+    tags: localTags,
+    todos: localTodos,
+    markdownBody,
+    engine: 'local-on-device',
+  }
+}
+
+function suggestUrlNoteType(
+  grabbed: GrabbedUrlContent,
+  availableTypes: string[],
+  analysisSourceText: string,
+): string {
+  const patterns =
+    grabbed.kind === 'youtube'
+      ? [/video/i, /media/i, /bookmark/i, /resource/i, /link/i]
+      : [/article/i, /artikel/i, /bookmark/i, /resource/i, /link/i, /research/i]
+
+  for (const pattern of patterns) {
+    const match = availableTypes.find((t) => pattern.test(t))
+    if (match) return match
+  }
+  return localSuggestType(`${grabbed.title} ${analysisSourceText}`, availableTypes)
+}
+
+function formatGrabbedSourceHeader(grabbed: GrabbedUrlContent): string {
+  const icon =
+    grabbed.kind === 'youtube'
+      ? '🎬'
+      : grabbed.kind === 'repository'
+        ? '💻'
+        : grabbed.kind === 'article'
+          ? '📰'
+          : '🔗'
+  const label =
+    grabbed.kind === 'youtube'
+      ? 'YouTube-Video'
+      : grabbed.kind === 'repository'
+        ? 'Repository'
+        : grabbed.kind === 'article'
+          ? 'Artikel'
+          : 'Web-Quelle'
+
+  const metaParts = [
+    grabbed.siteName && grabbed.siteName.toLowerCase() !== grabbed.kind ? grabbed.siteName : grabbed.domain,
+    grabbed.author ? `Autor/Kanal: ${grabbed.author}` : '',
+    grabbed.duration ? `Dauer: ${grabbed.duration}` : '',
+  ].filter(Boolean)
+
+  return [
+    `> ${icon} **${label}:** [${grabbed.title}](${grabbed.url})`,
+    metaParts.length > 0 ? `> ${metaParts.join(' • ')}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n')
+}
+
+function localSummarizeUrlContent(grabbed: GrabbedUrlContent, userNotes: string): string {
+  const sourcePool = [
+    grabbed.description,
+    grabbed.transcript ?? '',
+    grabbed.bodyText,
+    userNotes,
+  ]
+    .filter(Boolean)
+    .join('\n')
+
+  if (!sourcePool.trim()) {
+    return `- Gespeicherter Link von **${grabbed.domain}** (${grabbed.url})`
+  }
+  return localSummarize(sourcePool)
+}
+
+function buildGrabbedUrlMarkdownBody({
+  grabbed,
+  sourceHeader,
+  summary,
+  userNotes,
+  todos,
+}: {
+  grabbed: GrabbedUrlContent
+  sourceHeader: string
+  summary: string
+  userNotes: string
+  todos: string[]
+}): string {
+  const sections: string[] = [sourceHeader]
+
+  if (userNotes.trim()) {
+    sections.push(`## Eigene Notizen\n${userNotes.trim()}`)
+  }
+
+  if (summary.trim()) {
+    sections.push(`## Kernaussagen (KI-Analyse)\n${summary.trim()}`)
+  }
+
+  if (grabbed.chapters.length > 0) {
+    const chapterLines = grabbed.chapters.map((ch) => `- \`${ch.timestamp}\` – ${ch.title}`)
+    sections.push(`## Kapitel & Zeitstempel\n${chapterLines.join('\n')}`)
+  }
+
+  const detailText = grabbed.description || grabbed.bodyText
+  if (detailText && detailText.trim().length > 0) {
+    const previewSnippet =
+      detailText.trim().length > 900
+        ? `${detailText.trim().slice(0, 900).trimEnd()}…`
+        : detailText.trim()
+    sections.push(`## Auszug & Beschreibung\n${previewSnippet}`)
+  }
+
+  return appendTodosIfMissing(sections.join('\n\n'), todos)
+}
+
+

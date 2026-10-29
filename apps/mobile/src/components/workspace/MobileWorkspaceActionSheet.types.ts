@@ -37,6 +37,7 @@ export type MobileWorkspaceAction =
 	| "replaceInNote"
 	| "search"
 	| "setNoteIcon"
+	| "smartCreateNote"
 	| "smartNotes"
 	| "tableOfContents";
 
@@ -74,6 +75,12 @@ export type MobileWorkspaceActionSheetProps = {
 	onCopyFolderPath: () => void;
 	onCreateFolder: () => void;
 	onCreateNote: (titleOverride?: string) => void;
+	onCreateSmartNote?: (draft: {
+		title: string;
+		type: string;
+		tags: string[];
+		markdownBody: string;
+	}) => void;
 	onCreateRelationshipTarget: () => void;
 	onCreateTitleChange: (value: string) => void;
 	onCopyDeepLink: () => void;
@@ -145,6 +152,7 @@ export type MobileWorkspaceActionSheetProps = {
 	onToggleTypeVisibility: (typeName: string) => void;
 	onUndoWorkspaceEdit: () => void;
 	onUpdateNoteContent: (noteId: string, content: string) => void;
+	onUpdateNoteTitle?: (noteId: string, title: string) => void;
 	onViewIconChange: (value: MobileSidebarIcon) => void;
 	onViewDisplayPropertiesChange: (value: string[]) => void;
 	onViewFiltersChange: (value: MobileViewFilterGroup) => void;
