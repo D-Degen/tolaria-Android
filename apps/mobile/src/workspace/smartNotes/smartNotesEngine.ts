@@ -7,6 +7,44 @@ import {
 } from './urlContentGrabber'
 
 let pendingSharedText: string | null = null
+let pendingAutoStartVoice = false
+
+export function requestAutoStartVoiceInput(): void {
+  pendingAutoStartVoice = true
+}
+
+export function takePendingAutoStartVoiceInput(): boolean {
+  const current = pendingAutoStartVoice
+  pendingAutoStartVoice = false
+  return current
+}
+
+export async function startNativeVoiceRecognition(): Promise<string | null> {
+  const native = optionalNativeSmartNotesModule()
+  if (!native?.recognizeSpeech) return null
+  try {
+    const result = await native.recognizeSpeech()
+    const trimmed = result?.trim() ?? ''
+    return trimmed.length > 0 ? trimmed : null
+  } catch {
+    return null
+  }
+}
+
+export function isNoteOnlyLink(text: string): boolean {
+  const cleaned = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0 && !/^#\s+/.test(line))
+    .join(' ')
+    .trim()
+
+  if (!cleaned) return false
+  const { firstUrl, userNotes } = extractUrlsFromText(cleaned)
+  if (!firstUrl) return false
+  const remaining = userNotes.replace(/^[[\]()<>'"-\s•*]+|[[\]()<>'"-\s•*]+$/g, '').trim()
+  return remaining.length === 0
+}
 
 export async function consumeIncomingSharedText(): Promise<string | null> {
   const native = optionalNativeSmartNotesModule()
@@ -64,6 +102,25 @@ export async function executeSmartNoteAction(
       action,
       text: '',
       items: [],
+    }
+  }
+
+  if (action === 'analyzeLink') {
+    const { firstUrl, userNotes } = extractUrlsFromText(trimmed)
+    if (!firstUrl) {
+      return {
+        action: 'analyzeLink',
+        text: 'Kein gültiger Link (http:// oder https://) in dieser Notiz gefunden.',
+        items: [],
+      }
+    }
+    const grabbed = await grabUrlContent(firstUrl)
+    const draft = await generateUrlSmartNoteDraft(grabbed, userNotes, ['Note'])
+    return {
+      action: 'analyzeLink',
+      text: draft.markdownBody,
+      items: draft.tags,
+      draft,
     }
   }
 
@@ -131,29 +188,71 @@ export function executeLocalFallbackAction(
         items: todos,
       }
     }
+    case 'analyzeLink': {
+      const { firstUrl } = extractUrlsFromText(content)
+      return {
+        action,
+        text: firstUrl
+          ? `> 🔗 **Web-Quelle:** ${firstUrl}`
+          : 'Kein gültiger Link in dieser Notiz gefunden.',
+        items: [],
+      }
+    }
   }
 }
 
 function localSummarize(text: string): string {
-  const lines = text
+  const rawLines = text
     .split('\n')
     .map((l) => l.trim())
     .filter((l) => l.length > 0 && !l.startsWith('#') && !l.startsWith('---'))
 
-  if (lines.length === 0) return 'Notiz enthält keine zusammenfassbaren Absätze.'
+  if (rawLines.length === 0) return 'Notiz enthält keine zusammenfassbaren Absätze.'
+
+  const candidateSegments: string[] = []
+  for (const line of rawLines) {
+    if (line.length > 220) {
+      const sentences = line
+        .split(/(?<=[.!?])\s+/)
+        .map((s) => s.trim())
+        .filter((s) => s.length > 25)
+      if (sentences.length > 1) {
+        candidateSegments.push(...sentences)
+        continue
+      }
+      // For unpunctuated auto-captions, split into ~140-char chunks at word boundaries
+      const words = line.split(/\s+/)
+      let chunk = ''
+      for (const word of words) {
+        if (`${chunk} ${word}`.trim().length > 130) {
+          if (chunk.trim().length > 25) candidateSegments.push(chunk.trim())
+          chunk = word
+        } else {
+          chunk = `${chunk} ${word}`.trim()
+        }
+      }
+      if (chunk.trim().length > 25) candidateSegments.push(chunk.trim())
+    } else {
+      candidateSegments.push(line)
+    }
+  }
 
   const bullets: string[] = []
-  for (const line of lines) {
-    if (bullets.length >= 3) break
-    const clean = line.replace(/^[-*•]\s+/, '').replace(/^\[[ xX]\]\s+/, '')
+  const step = candidateSegments.length > 6 ? Math.max(1, Math.floor(candidateSegments.length / 4)) : 1
+  for (let i = 0; i < candidateSegments.length && bullets.length < 4; i += step) {
+    const clean = candidateSegments[i]
+      .replace(/^[-*•]\s+/, '')
+      .replace(/^\[[ xX]\]\s+/, '')
+      .replace(/^(?:Video-Transkript|Transkript|Video-Beschreibung):\s*/i, '')
+      .trim()
     if (clean.length > 15) {
-      bullets.push(`- ${clean.slice(0, 120)}${clean.length > 120 ? '...' : ''}`)
+      bullets.push(`- ${clean.slice(0, 140)}${clean.length > 140 ? '…' : ''}`)
     }
   }
 
   return bullets.length > 0
     ? bullets.join('\n')
-    : `- ${lines[0].slice(0, 100)}`
+    : `- ${rawLines[0].slice(0, 120)}`
 }
 
 function localSuggestTitle(text: string): string {
@@ -583,8 +682,8 @@ function formatGrabbedSourceHeader(grabbed: GrabbedUrlContent): string {
 
 function localSummarizeUrlContent(grabbed: GrabbedUrlContent, userNotes: string): string {
   const sourcePool = [
-    grabbed.description,
     grabbed.transcript ?? '',
+    grabbed.description,
     grabbed.bodyText,
     userNotes,
   ]
@@ -625,7 +724,15 @@ function buildGrabbedUrlMarkdownBody({
     sections.push(`## Kapitel & Zeitstempel\n${chapterLines.join('\n')}`)
   }
 
-  const detailText = grabbed.description || grabbed.bodyText
+  if (grabbed.transcript?.trim()) {
+    const transcriptSnippet =
+      grabbed.transcript.trim().length > 1_600
+        ? `${grabbed.transcript.trim().slice(0, 1_600).trimEnd()}…`
+        : grabbed.transcript.trim()
+    sections.push(`## Video-Transkript\n${transcriptSnippet}`)
+  }
+
+  const detailText = grabbed.description || (!grabbed.transcript ? grabbed.bodyText : '')
   if (detailText && detailText.trim().length > 0) {
     const previewSnippet =
       detailText.trim().length > 900

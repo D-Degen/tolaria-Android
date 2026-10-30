@@ -172,6 +172,7 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
           visible={showCreateAction && bulkSelection.selectedNotes.length === 0}
           onLongPress={onOpenSmartCreateNote}
           onPress={onOpenCreateNote}
+          onSmartVoicePress={onOpenSmartCreateNote}
         />
       </View>
       <BulkSelectionBar bulkActions={bulkActions} bulkSelection={bulkSelection} />

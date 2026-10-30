@@ -3,7 +3,10 @@ import {
   executeSmartNoteAction,
   generateSmartNoteDraft,
   getSmartNotesStatus,
+  isNoteOnlyLink,
   localSuggestType,
+  requestAutoStartVoiceInput,
+  takePendingAutoStartVoiceInput,
 } from './smartNotesEngine'
 
 describe('smartNotesEngine', () => {
@@ -85,5 +88,19 @@ Aufgabe: Dokumentation für Nutzer ergänzen`
     expect(localSuggestType('Projekt Roadmap für Q4 planen', ['Note', 'Project', 'Meeting'])).toBe('Project')
     expect(localSuggestType('Neue Idee für das Dashboard', ['Note', 'Idea', 'Task'])).toBe('Idea')
     expect(localSuggestType('Einfacher Einkaufszettel', ['Note', 'Meeting'])).toBe('Note')
+  })
+
+  it('detects when a note body consists only of a link (ignoring optional H1 title)', () => {
+    expect(isNoteOnlyLink('https://example.com/article')).toBe(true)
+    expect(isNoteOnlyLink('# Neue Notiz\n\nhttps://www.youtube.com/watch?v=dQw4w9WgXcQ')).toBe(true)
+    expect(isNoteOnlyLink('# Notiz\n\nhttps://example.com\nZusätzlicher langer Absatz mit Text.')).toBe(false)
+    expect(isNoteOnlyLink('Nur normaler Text ohne Link')).toBe(false)
+  })
+
+  it('manages the pending auto-start voice input flag', () => {
+    expect(takePendingAutoStartVoiceInput()).toBe(false)
+    requestAutoStartVoiceInput()
+    expect(takePendingAutoStartVoiceInput()).toBe(true)
+    expect(takePendingAutoStartVoiceInput()).toBe(false)
   })
 })

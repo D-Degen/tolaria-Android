@@ -20,7 +20,6 @@ import { MobileTypeIcon } from './MobileWorkspaceIcons'
 import { NoteMoreActionRows, type NoteActionGroup } from './MobileNoteMoreActions'
 import { isMobileMarkdownActionNote, isMobileTextLikeActionNote } from './MobileNoteMoreActionsModel'
 import { chipTone } from './mobileWorkspaceTone'
-import { useMobileDeviceLayout } from '../../ui/useMobileDeviceLayout'
 
 export function MoreActionsContent(props: MobileWorkspaceActionSheetProps) {
   const { styles } = useMobileStyles(createThemeStyles)
@@ -118,8 +117,16 @@ function MarkdownNoteMoreActionRows({
   props: MobileWorkspaceActionSheetProps
 }) {
   const { mobileColors } = useMobileStyles(createThemeStyles)
-  const phone = useMobileDeviceLayout() === 'phone'
-  if (group === 'note') return null
+  if (group === 'note') {
+    return (
+      <MoreActionRow
+        icon={<ListBullets color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
+        label={mobileText('tableOfContents.title')}
+        testID="workspace-action-table-of-contents"
+        onPress={props.onOpenTableOfContents}
+      />
+    )
+  }
   if (group === 'file') return <MoreActionRow
     icon={<FilePlus color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
     label={mobileText('command.note.exportPdf')}
@@ -142,12 +149,12 @@ function MarkdownNoteMoreActionRows({
           }}
         />
       ) : null}
-      {!phone ? <MoreActionRow
+      <MoreActionRow
         icon={<ListBullets color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
         label={mobileText('tableOfContents.title')}
         testID="workspace-action-table-of-contents"
         onPress={props.onOpenTableOfContents}
-      /> : null}
+      />
       {props.onOpenSmartNotes ? (
         <MoreActionRow
           icon={<Sparkle color={mobileColors.primary} size={desktopToolbarActionParity.iconSize} weight="bold" />}

@@ -3,11 +3,12 @@ import {
   Check,
   ClipboardText,
   Globe,
+  Microphone,
   Sparkle,
   Tag,
   YoutubeLogo,
 } from 'phosphor-react-native'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import * as ClipboardUtil from 'expo-clipboard'
 import { MobileButton } from '../../ui/MobileButton'
@@ -19,6 +20,8 @@ import type { MobileTypeDefinitions } from '../../workspace/mobileWorkspaceModel
 import {
   consumeIncomingSharedText,
   generateSmartNoteDraft,
+  startNativeVoiceRecognition,
+  takePendingAutoStartVoiceInput,
   takePendingSharedText,
 } from '../../workspace/smartNotes/smartNotesEngine'
 import type { SmartNoteDraft } from '../../workspace/smartNotes/smartNotesTypes'
@@ -54,12 +57,54 @@ export function MobileSmartCreateNoteContent(props: MobileSmartCreateNoteContent
 
   const [rawInput, setRawInput] = useState(() => takePendingSharedText() ?? '')
   const [loading, setLoading] = useState(false)
+  const [listening, setListening] = useState(false)
   const [draft, setDraft] = useState<SmartNoteDraft | null>(null)
+  const autoVoiceTriggeredRef = useRef(false)
 
   const detectedUrlInfo = useMemo(() => {
     const { firstUrl } = extractUrlsFromText(rawInput)
     return firstUrl ? detectUrlPreviewInfo(firstUrl) : null
   }, [rawInput])
+
+  const [editedTitle, setEditedTitle] = useState('')
+  const [selectedType, setSelectedType] = useState('Note')
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [editedBody, setEditedBody] = useState('')
+
+  const runGenerateForInput = useCallback(
+    async (inputText: string) => {
+      if (!inputText.trim()) return
+      setLoading(true)
+      try {
+        const generated = await generateSmartNoteDraft(inputText, availableTypes)
+        setDraft(generated)
+        setEditedTitle(generated.title)
+        setSelectedType(generated.type || 'Note')
+        setSelectedTags(generated.tags)
+        setEditedBody(generated.markdownBody)
+      } finally {
+        setLoading(false)
+      }
+    },
+    [availableTypes],
+  )
+
+  const handleStartVoiceDictation = useCallback(async () => {
+    setListening(true)
+    try {
+      const spoken = await startNativeVoiceRecognition()
+      if (spoken) {
+        let combined = spoken
+        setRawInput((prev) => {
+          combined = prev.trim().length > 0 ? `${prev.trim()}\n${spoken}` : spoken
+          return combined
+        })
+        await runGenerateForInput(combined)
+      }
+    } finally {
+      setListening(false)
+    }
+  }, [runGenerateForInput])
 
   useEffect(() => {
     void consumeIncomingSharedText().then((shared) => {
@@ -70,10 +115,13 @@ export function MobileSmartCreateNoteContent(props: MobileSmartCreateNoteContent
     })
   }, [])
 
-  const [editedTitle, setEditedTitle] = useState('')
-  const [selectedType, setSelectedType] = useState('Note')
-  const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [editedBody, setEditedBody] = useState('')
+  useEffect(() => {
+    if (autoVoiceTriggeredRef.current) return
+    if (takePendingAutoStartVoiceInput()) {
+      autoVoiceTriggeredRef.current = true
+      void handleStartVoiceDictation()
+    }
+  }, [handleStartVoiceDictation])
 
   const handlePasteClipboard = async () => {
     try {
@@ -87,18 +135,7 @@ export function MobileSmartCreateNoteContent(props: MobileSmartCreateNoteContent
   }
 
   const handleGenerate = async () => {
-    if (!rawInput.trim()) return
-    setLoading(true)
-    try {
-      const generated = await generateSmartNoteDraft(rawInput, availableTypes)
-      setDraft(generated)
-      setEditedTitle(generated.title)
-      setSelectedType(generated.type || 'Note')
-      setSelectedTags(generated.tags)
-      setEditedBody(generated.markdownBody)
-    } finally {
-      setLoading(false)
-    }
+    await runGenerateForInput(rawInput)
   }
 
   const toggleTag = (tag: string) => {
@@ -142,18 +179,37 @@ export function MobileSmartCreateNoteContent(props: MobileSmartCreateNoteContent
       <View style={styles.sectionCard}>
         <View style={styles.sectionHeaderRow}>
           <Text style={styles.sectionTitle}>Deine Gedanken / Spracheingabe</Text>
-          <MobileButton
-            density="compact"
-            icon={<ClipboardText color={mobileColors.text} size={14} />}
-            label="Aus Zwischenablage"
-            testID="smart-create-paste-button"
-            variant="secondary"
-            onPress={handlePasteClipboard}
-          />
+          <View style={styles.headerActionsRow}>
+            <MobileButton
+              density="compact"
+              disabled={listening || loading}
+              icon={<Microphone color={mobileColors.primary} size={14} weight="fill" />}
+              label={listening ? 'Höre zu...' : 'Spracheingabe'}
+              testID="smart-create-voice-button"
+              variant="secondary"
+              onPress={handleStartVoiceDictation}
+            />
+            <MobileButton
+              density="compact"
+              icon={<ClipboardText color={mobileColors.text} size={14} />}
+              label="Aus Zwischenablage"
+              testID="smart-create-paste-button"
+              variant="secondary"
+              onPress={handlePasteClipboard}
+            />
+          </View>
         </View>
+        {listening && (
+          <View style={styles.urlDetectedBanner} testID="smart-create-voice-listening-banner">
+            <Microphone color={mobileColors.primary} size={16} weight="fill" />
+            <Text style={styles.urlDetectedText}>
+              Spracheingabe aktiv – bitte sprich jetzt deine Notiz...
+            </Text>
+          </View>
+        )}
         <MobileTextInput
           autoCapitalize="sentences"
-          autoFocus
+          autoFocus={!listening}
           label="Text, Spracheingabe oder beliebige URL (Webseite, Artikel, YouTube...)"
           multiline
           numberOfLines={4}
@@ -400,6 +456,12 @@ function createThemeStyles(mobileColors: MobileColors, metrics: MobileMetrics) {
       flexDirection: 'row',
       justifyContent: 'flex-end',
       marginTop: mobileSpace.xs,
+    },
+    headerActionsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      gap: mobileSpace.xs,
     },
     loadingBox: {
       flexDirection: 'row',

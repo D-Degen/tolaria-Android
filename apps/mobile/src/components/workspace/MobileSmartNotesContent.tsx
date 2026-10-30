@@ -1,5 +1,5 @@
-import { Check, Clipboard, Lightbulb, ListChecks, Sparkle, Tag, TextAlignLeft } from 'phosphor-react-native'
-import { useState } from 'react'
+import { Check, Clipboard, Globe, Lightbulb, ListChecks, Sparkle, Tag, TextAlignLeft } from 'phosphor-react-native'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native'
 import * as ClipboardUtil from 'expo-clipboard'
 import { MobileButton } from '../../ui/MobileButton'
@@ -13,7 +13,7 @@ import {
   mobileNoteEditableContent,
 } from '../../workspace/mobileDocumentContent'
 import type { MobileNote, MobilePropertyValue } from '../../workspace/mobileWorkspaceModel'
-import { executeSmartNoteAction } from '../../workspace/smartNotes/smartNotesEngine'
+import { executeSmartNoteAction, isNoteOnlyLink } from '../../workspace/smartNotes/smartNotesEngine'
 import type { SmartNoteActionType, SmartNotesResult } from '../../workspace/smartNotes/smartNotesTypes'
 import { Text } from '../ui/text'
 
@@ -59,20 +59,34 @@ export function MobileSmartNotesContent(props: MobileSmartNotesContentProps) {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<SmartNotesResult | null>(null)
   const [applied, setApplied] = useState(false)
+  const autoLinkNoteIdRef = useRef<string | null>(null)
 
-  const handleAction = async (action: SmartNoteActionType) => {
+  const handleAction = useCallback(
+    async (action: SmartNoteActionType) => {
+      if (!note) return
+      setActiveAction(action)
+      setLoading(true)
+      setApplied(false)
+      try {
+        const content = noteContentText(note)
+        const res = await executeSmartNoteAction(action, content)
+        setResult(res)
+      } finally {
+        setLoading(false)
+      }
+    },
+    [note],
+  )
+
+  useEffect(() => {
     if (!note) return
-    setActiveAction(action)
-    setLoading(true)
-    setApplied(false)
-    try {
-      const content = noteContentText(note)
-      const res = await executeSmartNoteAction(action, content)
-      setResult(res)
-    } finally {
-      setLoading(false)
+    if (autoLinkNoteIdRef.current === note.id) return
+    const content = noteContentText(note)
+    if (isNoteOnlyLink(content)) {
+      autoLinkNoteIdRef.current = note.id
+      void handleAction('analyzeLink')
     }
-  }
+  }, [handleAction, note])
 
   const handleApply = () => {
     if (!note || !result) return
@@ -113,6 +127,23 @@ export function MobileSmartNotesContent(props: MobileSmartNotesContentProps) {
     } else if (result.action === 'extractTodos') {
       const todoBlock = `\n\n## To-Dos\n${result.text}\n`
       onUpdateContent?.(note.id, `${rawDocument.trimEnd()}${todoBlock}`)
+      setApplied(true)
+    } else if (result.action === 'analyzeLink') {
+      const suggestedTitle = result.draft?.title?.trim() || note.title || 'Link-Analyse'
+      let nextDocument = rawDocument
+      if (result.draft?.tags && result.draft.tags.length > 0) {
+        const existingTags = note.tags ?? []
+        const mergedTags = Array.from(new Set([...existingTags, ...result.draft.tags]))
+        nextDocument = writeFrontmatterValue(nextDocument, 'tags', mergedTags)
+      }
+      const nextBody = isNoteOnlyLink(currentBody)
+        ? `# ${suggestedTitle}\n\n${result.text.trim()}\n`
+        : `${currentBody.trimEnd()}\n\n${result.text.trim()}\n`
+      if (isNoteOnlyLink(currentBody) && result.draft?.title) {
+        nextDocument = writeFrontmatterValue(nextDocument, 'title', suggestedTitle)
+        onUpdateNoteTitle?.(note.id, suggestedTitle)
+      }
+      onUpdateContent?.(note.id, mobileDocumentWithBody(nextDocument, nextBody))
       setApplied(true)
     }
   }
@@ -165,13 +196,24 @@ export function MobileSmartNotesContent(props: MobileSmartNotesContentProps) {
           subtitle="Aufgaben & Checklisten erkennen"
           onPress={() => handleAction('extractTodos')}
         />
+        <SmartActionCard
+          active={activeAction === 'analyzeLink'}
+          icon={<Globe color={mobileColors.primary} size={22} />}
+          label="Link-Analyse"
+          subtitle="Webseite oder Video abrufen & zusammenfassen"
+          onPress={() => handleAction('analyzeLink')}
+        />
       </View>
 
       {/* Loading state */}
       {loading && (
         <View style={styles.loadingBox}>
           <ActivityIndicator color={mobileColors.primary} size="small" />
-          <Text style={styles.loadingText}>Gemini Nano verarbeitet Notizinhalt...</Text>
+          <Text style={styles.loadingText}>
+            {activeAction === 'analyzeLink'
+              ? 'Lade Link-Inhalt & erstelle KI-Analyse...'
+              : 'Gemini Nano verarbeitet Notizinhalt...'}
+          </Text>
         </View>
       )}
 
@@ -228,6 +270,15 @@ export function MobileSmartNotesContent(props: MobileSmartNotesContentProps) {
                 disabled={applied}
                 icon={<Check color={mobileColors.textInverse} size={16} />}
                 label="Als Checkliste anfügen"
+                variant="primary"
+                onPress={handleApply}
+              />
+            )}
+            {result.action === 'analyzeLink' && (
+              <MobileButton
+                disabled={applied}
+                icon={<Check color={mobileColors.textInverse} size={16} />}
+                label="Link-Analyse in Notiz übernehmen"
                 variant="primary"
                 onPress={handleApply}
               />

@@ -24,8 +24,11 @@ export type GrabbedUrlContent = {
 const URL_REGEX = /https?:\/\/[^\s<>)"'`]+/gi
 const FETCH_TIMEOUT_MS = 8_000
 const MAX_BODY_CHARS = 3_800
+const MAX_TRANSCRIPT_CHARS = 8_000
 const BROWSER_USER_AGENT =
   'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36'
+const DESKTOP_USER_AGENT =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
 
 /**
  * Extracts all HTTP/HTTPS URLs from raw user text and returns both the URLs
@@ -127,7 +130,24 @@ async function grabWebpageContent(url: string): Promise<GrabbedUrlContent> {
   const html = await fetchTextWithTimeout(url)
   if (!html) return fallback
 
-  return parseHtmlDocumentContent(url, html)
+  const parsed = parseHtmlDocumentContent(url, html)
+  if (!parsed.transcript) {
+    const trackUrl = extractHtmlTrackTranscriptUrl(url, html)
+    if (trackUrl) {
+      const rawTrack = await fetchTextWithTimeout(trackUrl)
+      if (rawTrack) {
+        const trackTranscript = parseTranscriptPayload(rawTrack)
+        if (trackTranscript) {
+          parsed.transcript = truncateText(trackTranscript, MAX_TRANSCRIPT_CHARS)
+          parsed.bodyText = truncateText(
+            [parsed.bodyText, `Transkript:\n${parsed.transcript}`].filter(Boolean).join('\n\n'),
+            MAX_BODY_CHARS,
+          )
+        }
+      }
+    }
+  }
+  return parsed
 }
 
 export function parseHtmlDocumentContent(url: string, html: string): GrabbedUrlContent {
@@ -178,12 +198,13 @@ export function parseHtmlDocumentContent(url: string, html: string): GrabbedUrlC
 
 async function grabYouTubeContent(url: string, videoId: string): Promise<GrabbedUrlContent> {
   const fallback = buildFallbackUrlMetadata(url, 'youtube')
-  const watchUrl = `https://www.youtube.com/watch?v=${videoId}`
-  const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(watchUrl)}&format=json`
+  const watchUrl = `https://www.youtube.com/watch?v=${videoId}&hl=de`
+  const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`)}&format=json`
 
-  const [oembedJson, watchHtml] = await Promise.all([
+  const [oembedJson, watchHtml, innertubeData] = await Promise.all([
     fetchTextWithTimeout(oembedUrl),
-    fetchTextWithTimeout(watchUrl),
+    fetchTextWithTimeout(watchUrl, DESKTOP_USER_AGENT),
+    fetchYouTubeInnertubePlayerData(videoId),
   ])
 
   let title = fallback.title
@@ -202,42 +223,55 @@ async function grabYouTubeContent(url: string, videoId: string): Promise<Grabbed
   let description = ''
   let duration: string | undefined
   let keywords: string[] = ['youtube', 'video']
-  let captionUrl: string | null = null
+  const candidateCaptionUrls: string[] = []
+
+  if (innertubeData) {
+    if (innertubeData.title) title = innertubeData.title
+    if (innertubeData.author) author = innertubeData.author
+    if (innertubeData.shortDescription) description = innertubeData.shortDescription
+    if (innertubeData.lengthSeconds) duration = formatDurationSeconds(innertubeData.lengthSeconds)
+    if (innertubeData.keywords.length > 0) {
+      keywords = Array.from(new Set(['youtube', 'video', ...innertubeData.keywords]))
+    }
+    if (innertubeData.captionUrl) candidateCaptionUrls.push(innertubeData.captionUrl)
+  }
 
   if (watchHtml) {
     const playerData = extractYouTubePlayerResponse(watchHtml)
     if (playerData) {
-      if (playerData.title) title = playerData.title
-      if (playerData.author) author = playerData.author
-      if (playerData.shortDescription) description = playerData.shortDescription
-      if (playerData.lengthSeconds) duration = formatDurationSeconds(playerData.lengthSeconds)
+      if (!innertubeData?.title && playerData.title) title = playerData.title
+      if (!innertubeData?.author && playerData.author) author = playerData.author
+      if (!description && playerData.shortDescription) description = playerData.shortDescription
+      if (!duration && playerData.lengthSeconds) duration = formatDurationSeconds(playerData.lengthSeconds)
       if (playerData.keywords.length > 0) {
-        keywords = Array.from(new Set(['youtube', 'video', ...playerData.keywords]))
+        keywords = Array.from(new Set([...keywords, ...playerData.keywords]))
       }
-      captionUrl = playerData.captionUrl
+      if (playerData.captionUrl && !candidateCaptionUrls.includes(playerData.captionUrl)) {
+        candidateCaptionUrls.push(playerData.captionUrl)
+      }
     } else {
       const ogTitle = extractMetaContent(watchHtml, ['og:title', 'title'])
       const ogDesc = extractMetaContent(watchHtml, ['og:description', 'description'])
-      if (ogTitle) title = cleanPageTitle(ogTitle)
-      if (ogDesc) description = ogDesc
+      if (ogTitle && title === fallback.title) title = cleanPageTitle(ogTitle)
+      if (ogDesc && !description && !isBoilerplateDescription(ogDesc)) {
+        description = ogDesc
+      }
     }
   }
 
   let transcript: string | undefined
-  if (captionUrl) {
-    const captionXml = await fetchTextWithTimeout(captionUrl)
-    if (captionXml) {
-      const parsedTranscript = parseYouTubeCaptionXml(captionXml)
-      if (parsedTranscript) {
-        transcript = truncateText(parsedTranscript, MAX_BODY_CHARS)
-      }
+  for (const rawCaptionUrl of candidateCaptionUrls) {
+    const fetchedTranscript = await fetchYouTubeCaptionTrack(rawCaptionUrl)
+    if (fetchedTranscript) {
+      transcript = truncateText(fetchedTranscript, MAX_TRANSCRIPT_CHARS)
+      break
     }
   }
 
   const chapters = extractChaptersFromDescription(description)
   const bodyParts = [
-    description ? truncateText(description, 1_800) : '',
-    transcript ? `Transkript-Auszug:\n${transcript}` : '',
+    transcript ? `Video-Transkript:\n${transcript}` : '',
+    description ? `Video-Beschreibung:\n${truncateText(description, 1_800)}` : '',
   ].filter(Boolean)
 
   return {
@@ -249,11 +283,11 @@ async function grabYouTubeContent(url: string, videoId: string): Promise<Grabbed
     author,
     duration,
     description: truncateText(description, 800),
-    bodyText: truncateText(bodyParts.join('\n\n'), MAX_BODY_CHARS),
+    bodyText: truncateText(bodyParts.join('\n\n'), MAX_TRANSCRIPT_CHARS),
     transcript,
     chapters,
     keywords: keywords.slice(0, 8),
-    fetched: Boolean(oembedJson || watchHtml),
+    fetched: Boolean(oembedJson || watchHtml || innertubeData),
   }
 }
 
@@ -264,6 +298,49 @@ type YouTubePlayerExtract = {
   lengthSeconds?: number
   keywords: string[]
   captionUrl: string | null
+}
+
+type RawYouTubePlayerPayload = {
+  videoDetails?: {
+    title?: string
+    author?: string
+    shortDescription?: string
+    lengthSeconds?: string
+    keywords?: string[]
+  }
+  captions?: {
+    playerCaptionsTracklistRenderer?: {
+      captionTracks?: Array<{
+        baseUrl?: string
+        languageCode?: string
+        kind?: string
+      }>
+    }
+  }
+}
+
+function parseYouTubePlayerPayload(data: RawYouTubePlayerPayload): YouTubePlayerExtract {
+  const details = data.videoDetails
+  const tracks = data.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? []
+  const preferredTrack =
+    tracks.find((t) => t.languageCode?.startsWith('de') && t.kind !== 'asr') ??
+    tracks.find((t) => t.languageCode?.startsWith('de')) ??
+    tracks.find((t) => t.languageCode?.startsWith('en') && t.kind !== 'asr') ??
+    tracks.find((t) => t.languageCode?.startsWith('en')) ??
+    tracks[0]
+
+  const rawKeywords = (details?.keywords ?? [])
+    .map((k) => k.trim().toLowerCase().replace(/[^a-z0-9äöüß-]/gi, ''))
+    .filter((k) => k.length >= 3 && k.length <= 24)
+
+  return {
+    title: details?.title?.trim(),
+    author: details?.author?.trim(),
+    shortDescription: details?.shortDescription?.trim(),
+    lengthSeconds: details?.lengthSeconds ? Number(details.lengthSeconds) : undefined,
+    keywords: rawKeywords.slice(0, 6),
+    captionUrl: preferredTrack?.baseUrl ?? null,
+  }
 }
 
 export function extractYouTubePlayerResponse(html: string): YouTubePlayerExtract | null {
@@ -278,46 +355,86 @@ export function extractYouTubePlayerResponse(html: string): YouTubePlayerExtract
   if (!jsonSlice) return null
 
   try {
-    const data = JSON.parse(jsonSlice) as {
-      videoDetails?: {
-        title?: string
-        author?: string
-        shortDescription?: string
-        lengthSeconds?: string
-        keywords?: string[]
-      }
-      captions?: {
-        playerCaptionsTracklistRenderer?: {
-          captionTracks?: Array<{
-            baseUrl?: string
-            languageCode?: string
-          }>
-        }
-      }
-    }
-
-    const details = data.videoDetails
-    const tracks = data.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? []
-    const preferredTrack =
-      tracks.find((t) => t.languageCode?.startsWith('de')) ??
-      tracks.find((t) => t.languageCode?.startsWith('en')) ??
-      tracks[0]
-
-    const rawKeywords = (details?.keywords ?? [])
-      .map((k) => k.trim().toLowerCase().replace(/[^a-z0-9äöüß-]/gi, ''))
-      .filter((k) => k.length >= 3 && k.length <= 24)
-
-    return {
-      title: details?.title?.trim(),
-      author: details?.author?.trim(),
-      shortDescription: details?.shortDescription?.trim(),
-      lengthSeconds: details?.lengthSeconds ? Number(details.lengthSeconds) : undefined,
-      keywords: rawKeywords.slice(0, 6),
-      captionUrl: preferredTrack?.baseUrl ?? null,
-    }
+    const data = JSON.parse(jsonSlice) as RawYouTubePlayerPayload
+    return parseYouTubePlayerPayload(data)
   } catch {
     return null
   }
+}
+
+async function fetchYouTubeInnertubePlayerData(videoId: string): Promise<YouTubePlayerExtract | null> {
+  if (typeof fetch !== 'function') return null
+  const clients = [
+    {
+      clientName: 'WEB',
+      clientVersion: '2.20240726.00.00',
+      hl: 'de',
+      gl: 'DE',
+    },
+    {
+      clientName: 'ANDROID',
+      clientVersion: '19.29.37',
+      androidSdkVersion: 34,
+      hl: 'de',
+      gl: 'DE',
+    },
+  ]
+
+  for (const client of clients) {
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null
+    const timer = controller ? setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS) : null
+    try {
+      const response = await fetch('https://www.youtube.com/youtubei/v1/player?prettyPrint=false', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'Accept-Language': 'de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7',
+          'User-Agent': DESKTOP_USER_AGENT,
+        },
+        body: JSON.stringify({
+          videoId,
+          context: { client },
+        }),
+        signal: controller?.signal,
+      })
+      if (!response.ok) continue
+      const payload = (await response.json()) as RawYouTubePlayerPayload
+      const extracted = parseYouTubePlayerPayload(payload)
+      if (extracted.captionUrl || extracted.title || extracted.shortDescription) {
+        return extracted
+      }
+    } catch {
+      // Try next Innertube client
+    } finally {
+      if (timer) clearTimeout(timer)
+    }
+  }
+  return null
+}
+
+async function fetchYouTubeCaptionTrack(baseUrl: string): Promise<string | null> {
+  const candidates: string[] = []
+  try {
+    const parsed = new URL(baseUrl)
+    parsed.searchParams.set('fmt', 'json3')
+    candidates.push(parsed.toString())
+    parsed.searchParams.set('fmt', 'srv3')
+    candidates.push(parsed.toString())
+  } catch {
+    // Fallback to raw baseUrl
+  }
+  candidates.push(baseUrl)
+
+  for (const candidateUrl of candidates) {
+    const rawPayload = await fetchTextWithTimeout(candidateUrl, DESKTOP_USER_AGENT)
+    if (!rawPayload) continue
+    const parsedText = parseTranscriptPayload(rawPayload)
+    if (parsedText && parsedText.length > 10) {
+      return parsedText
+    }
+  }
+  return null
 }
 
 function extractBalancedJsonObject(source: string, startIndex: number): string | null {
@@ -354,16 +471,99 @@ function extractBalancedJsonObject(source: string, startIndex: number): string |
 
 export function parseYouTubeCaptionXml(xml: string): string {
   const segments: string[] = []
-  const textRegex = /<text\b[^>]*>([\s\S]*?)<\/text>/gi
-  let match = textRegex.exec(xml)
+  const tagRegex = /<(?:text|p)\b[^>]*>([\s\S]*?)<\/(?:text|p)>/gi
+  let match = tagRegex.exec(xml)
   while (match) {
     const decoded = decodeHtmlEntities(match[1].replace(/<[^>]+>/g, ' '))
       .replace(/\s+/g, ' ')
       .trim()
     if (decoded) segments.push(decoded)
-    match = textRegex.exec(xml)
+    match = tagRegex.exec(xml)
   }
   return segments.join(' ')
+}
+
+export function parseTranscriptPayload(payload: string): string {
+  const trimmed = payload.trim()
+  if (!trimmed) return ''
+
+  // 1. JSON3 format (YouTube timedtext fmt=json3)
+  if (trimmed.startsWith('{')) {
+    try {
+      const json = JSON.parse(trimmed) as {
+        events?: Array<{
+          segs?: Array<{ utf8?: string }>
+        }>
+      }
+      if (Array.isArray(json.events)) {
+        const words: string[] = []
+        for (const ev of json.events) {
+          if (!Array.isArray(ev.segs)) continue
+          const line = ev.segs
+            .map((s) => s.utf8 ?? '')
+            .join('')
+            .replace(/\s+/g, ' ')
+            .trim()
+          if (line) words.push(line)
+        }
+        const joined = words.join(' ').replace(/\s+/g, ' ').trim()
+        if (joined) return joined
+      }
+    } catch {
+      // Fall through to XML / VTT parsers
+    }
+  }
+
+  // 2. XML format (<text> or <p>/<s> srv3 format)
+  if (trimmed.includes('<text') || trimmed.includes('<timedtext') || trimmed.includes('<transcript')) {
+    const xmlText = parseYouTubeCaptionXml(trimmed)
+    if (xmlText) return xmlText
+  }
+
+  // 3. WebVTT / SRT subtitle format
+  if (trimmed.startsWith('WEBVTT') || /\d{2}:\d{2}:\d{2}[.,]\d{3}\s*-->/.test(trimmed)) {
+    const lines = trimmed
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => {
+        if (!line || line === 'WEBVTT') return false
+        if (/^\d+$/.test(line)) return false
+        if (/^(?:NOTE|STYLE|REGION)\b/.test(line)) return false
+        if (/\d{2}:\d{2}(?::\d{2})?[.,]\d{3}\s*-->/.test(line)) return false
+        return true
+      })
+      .map((line) => decodeHtmlEntities(line.replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim())
+      .filter(Boolean)
+
+    const deduped: string[] = []
+    for (const l of lines) {
+      if (deduped[deduped.length - 1] !== l) deduped.push(l)
+    }
+    return deduped.join(' ')
+  }
+
+  return parseYouTubeCaptionXml(trimmed)
+}
+
+function extractHtmlTrackTranscriptUrl(pageUrl: string, html: string): string | null {
+  const trackRegex = /<track\b[^>]+>/gi
+  let match = trackRegex.exec(html)
+  while (match) {
+    const tag = match[0]
+    const kind = tag.match(/\bkind\s*=\s*["']([^"']+)["']/i)?.[1]?.toLowerCase() ?? 'subtitles'
+    if (kind === 'subtitles' || kind === 'captions') {
+      const src = tag.match(/\bsrc\s*=\s*["']([^"']+)["']/i)?.[1]?.trim()
+      if (src) {
+        try {
+          return new URL(decodeHtmlEntities(src), pageUrl).toString()
+        } catch {
+          // Ignore invalid track URL
+        }
+      }
+    }
+    match = trackRegex.exec(html)
+  }
+  return null
 }
 
 export function extractChaptersFromDescription(description: string): GrabbedUrlChapter[] {
@@ -468,6 +668,16 @@ function cleanPageTitle(rawTitle: string): string {
     .replace(/\s*-\s*YouTube$/i, '')
     .trim()
   return cleaned || rawTitle.trim()
+}
+
+function isBoilerplateDescription(desc: string): boolean {
+  const lower = desc.trim().toLowerCase()
+  return (
+    lower.includes('teile deine videos mit freunden') ||
+    lower.includes('share your videos with friends, family, and the world') ||
+    lower.includes('auf youtube findest du die angesagtesten videos') ||
+    lower.includes('enjoy the videos and music you love')
+  )
 }
 
 export function buildFallbackUrlMetadata(
@@ -587,7 +797,10 @@ export function decodeHtmlEntities(input: string): string {
     })
 }
 
-async function fetchTextWithTimeout(url: string): Promise<string | null> {
+async function fetchTextWithTimeout(
+  url: string,
+  userAgent: string = BROWSER_USER_AGENT,
+): Promise<string | null> {
   if (typeof fetch !== 'function') return null
   const controller = typeof AbortController !== 'undefined' ? new AbortController() : null
   const timer = controller ? setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS) : null
@@ -597,7 +810,7 @@ async function fetchTextWithTimeout(url: string): Promise<string | null> {
       headers: {
         Accept: 'text/html,application/xhtml+xml,application/xml,application/json;q=0.9,*/*;q=0.8',
         'Accept-Language': 'de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7',
-        'User-Agent': BROWSER_USER_AGENT,
+        'User-Agent': userAgent,
       },
       signal: controller?.signal,
     })

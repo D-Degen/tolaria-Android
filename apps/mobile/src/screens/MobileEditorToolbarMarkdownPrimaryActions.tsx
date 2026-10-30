@@ -25,6 +25,18 @@ export function MobileEditorToolbarMarkdownPrimaryActions({
 
   return (
     <>
+      {onOpenChangeNoteType ? (
+        <Pressable
+          accessibilityLabel={note.type}
+          accessibilityRole="button"
+          hitSlop={6}
+          style={styles.typeButton}
+          testID="editor-note-type-action"
+          onPress={onOpenChangeNoteType}
+        >
+          <MobileChip label={note.type} tone={chipTone(note.typeTone)} />
+        </Pressable>
+      ) : null}
       <MobileIconButton
         accessibilityLabel={mobileText(
           note.favorite ? 'command.note.removeFavorite' : 'command.note.addFavorite',
@@ -38,18 +50,6 @@ export function MobileEditorToolbarMarkdownPrimaryActions({
           weight={note.favorite ? 'fill' : 'regular'}
         />
       </MobileIconButton>
-      {onOpenChangeNoteType ? (
-        <Pressable
-          accessibilityLabel={note.type}
-          accessibilityRole="button"
-          hitSlop={6}
-          style={styles.typeButton}
-          testID="editor-note-type-action"
-          onPress={onOpenChangeNoteType}
-        >
-          <MobileChip label={note.type} tone={chipTone(note.typeTone)} />
-        </Pressable>
-      ) : null}
       {!compact ? (
         <MobileIconButton
           accessibilityLabel={mobileText(

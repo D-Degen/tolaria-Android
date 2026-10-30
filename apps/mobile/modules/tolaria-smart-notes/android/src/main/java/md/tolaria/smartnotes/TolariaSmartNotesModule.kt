@@ -1,12 +1,36 @@
 package md.tolaria.smartnotes
 
+import android.app.Activity
 import android.content.Intent
+import android.speech.RecognizerIntent
+import expo.modules.kotlin.Promise
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import java.util.Locale
 
 class TolariaSmartNotesModule : Module() {
+  private val speechRequestCode = 48192
+  @Volatile
+  private var pendingSpeechPromise: Promise? = null
+
   override fun definition() = ModuleDefinition {
     Name("TolariaSmartNotes")
+
+    OnActivityResult { _, payload ->
+      if (payload.requestCode == speechRequestCode) {
+        val promise = pendingSpeechPromise
+        pendingSpeechPromise = null
+        if (promise != null) {
+          if (payload.resultCode == Activity.RESULT_OK && payload.data != null) {
+            val matches = payload.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            val spoken = matches?.firstOrNull()?.trim()
+            promise.resolve(if (!spoken.isNullOrEmpty()) spoken else null)
+          } else {
+            promise.resolve(null)
+          }
+        }
+      }
+    }
 
     AsyncFunction("isAvailable") {
       checkGeminiNanoAvailable()
@@ -78,6 +102,27 @@ class TolariaSmartNotesModule : Module() {
         }
       } else {
         null
+      }
+    }
+
+    AsyncFunction("recognizeSpeech") { promise: Promise ->
+      val activity = appContext.currentActivity
+      if (activity == null) {
+        promise.resolve(null)
+        return@AsyncFunction
+      }
+      pendingSpeechPromise?.resolve(null)
+      pendingSpeechPromise = promise
+      try {
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+          putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+          putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+          putExtra(RecognizerIntent.EXTRA_PROMPT, "KI-Sprachnotiz diktieren...")
+        }
+        activity.startActivityForResult(intent, speechRequestCode)
+      } catch (e: Throwable) {
+        pendingSpeechPromise = null
+        promise.resolve(null)
       }
     }
   }

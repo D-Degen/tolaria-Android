@@ -7,6 +7,7 @@ import {
   extractYouTubePlayerResponse,
   extractYouTubeVideoId,
   parseHtmlDocumentContent,
+  parseTranscriptPayload,
   parseYouTubeCaptionXml,
 } from './urlContentGrabber'
 import { generateSmartNoteDraft } from './smartNotesEngine'
@@ -119,6 +120,32 @@ describe('urlContentGrabber', () => {
     const captionXml = `<transcript><text start="0" dur="2.5">Hallo und herzlich willkommen</text><text start="2.5" dur="3.0">zu unserem Kotlin Tutorial &amp; Deep Dive.</text></transcript>`
     expect(parseYouTubeCaptionXml(captionXml)).toBe(
       'Hallo und herzlich willkommen zu unserem Kotlin Tutorial & Deep Dive.',
+    )
+
+    const srv3Xml = `<timedtext><body><p t="0" d="2000"><s>Erster Satz im Video.</s></p><p t="2000" d="3000"><s>Zweiter Satz mit wichtigen Fakten.</s></p></body></timedtext>`
+    expect(parseTranscriptPayload(srv3Xml)).toBe(
+      'Erster Satz im Video. Zweiter Satz mit wichtigen Fakten.',
+    )
+
+    const json3Payload = JSON.stringify({
+      events: [
+        { segs: [{ utf8: 'Willkommen ' }, { utf8: 'zum YouTube Transkript Test.' }] },
+        { segs: [{ utf8: 'Hier werden alle Inhalte zusammengefasst.' }] },
+      ],
+    })
+    expect(parseTranscriptPayload(json3Payload)).toBe(
+      'Willkommen zum YouTube Transkript Test. Hier werden alle Inhalte zusammengefasst.',
+    )
+
+    const vttPayload = `WEBVTT
+
+00:00:01.000 --> 00:00:04.000
+Das ist ein WebVTT Untertitel für HTML5 Videos.
+
+00:00:04.500 --> 00:00:08.000
+Damit lassen sich auch andere Video-Plattformen zusammenfassen.`
+    expect(parseTranscriptPayload(vttPayload)).toBe(
+      'Das ist ein WebVTT Untertitel für HTML5 Videos. Damit lassen sich auch andere Video-Plattformen zusammenfassen.',
     )
   })
 

@@ -14,4 +14,5 @@ export type NativeSmartNotesModule = {
   extractTodos(text: string): Promise<string[]>
   generateStructuredNote?(text: string, availableTypes: string[]): Promise<string>
   consumeSharedText?(): Promise<string | null>
+  recognizeSpeech?(): Promise<string | null>
 }

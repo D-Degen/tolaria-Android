@@ -1,4 +1,9 @@
-export type SmartNoteActionType = 'summarize' | 'suggestTitle' | 'generateTags' | 'extractTodos'
+export type SmartNoteActionType =
+  | 'summarize'
+  | 'suggestTitle'
+  | 'generateTags'
+  | 'extractTodos'
+  | 'analyzeLink'
 
 export type SmartNotesStatus = {
   available: boolean
@@ -11,6 +16,7 @@ export type SmartNotesResult = {
   action: SmartNoteActionType
   text: string
   items?: string[]
+  draft?: SmartNoteDraft
 }
 
 export type SmartNoteDraft = {

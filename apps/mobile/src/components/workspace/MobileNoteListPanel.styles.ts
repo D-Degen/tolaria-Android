@@ -7,6 +7,8 @@ import { mobilePaneFooterFrame } from './mobilePaneFooterLayout'
 
 export function createActionStyles(mobileColors: MobileColors, metrics: MobileMetrics) {
   const diameter = metrics.size(mobileNoteListCreateChrome.diameter)
+  const smartDiameter = metrics.size(mobileNoteListCreateChrome.smartVoiceDiameter)
+  const smartGap = metrics.size(mobileNoteListCreateChrome.smartVoiceGap)
   const inset = metrics.size(mobileNoteListCreateChrome.inset)
   const styles = StyleSheet.create({
     createAction: {
@@ -27,8 +29,33 @@ export function createActionStyles(mobileColors: MobileColors, metrics: MobileMe
       shadowOpacity: 0.27,
       shadowRadius: 4.65,
     },
+    smartVoiceAction: {
+      position: 'absolute',
+      right: inset + (diameter - smartDiameter) / 2,
+      bottom: inset + diameter + smartGap,
+      width: smartDiameter,
+      height: smartDiameter,
+      borderRadius: smartDiameter / 2,
+      backgroundColor: mobileColors.card,
+      borderWidth: 1.5,
+      borderColor: mobileColors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 0,
+      zIndex: 50,
+      elevation: 5,
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.22,
+      shadowRadius: 3.84,
+    },
   })
-  return { mobileColors, styles, createIconSize: metrics.size(mobileNoteListCreateChrome.iconSize) }
+  return {
+    mobileColors,
+    styles,
+    createIconSize: metrics.size(mobileNoteListCreateChrome.iconSize),
+    smartVoiceIconSize: metrics.size(mobileNoteListCreateChrome.smartVoiceIconSize),
+  }
 }
 
 export function createThemeStyles(mobileColors: MobileColors, metrics: MobileMetrics) {

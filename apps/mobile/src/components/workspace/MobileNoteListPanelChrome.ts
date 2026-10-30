@@ -6,9 +6,13 @@ export const mobileNoteListToolbarChrome = {
 
 export const mobileNoteListCreateChrome = {
   testID: 'note-list-create-action',
+  smartVoiceTestID: 'note-list-smart-voice-action',
   diameter: 56,
+  smartVoiceDiameter: 46,
+  smartVoiceGap: 12,
   inset: 16,
   iconSize: 24,
+  smartVoiceIconSize: 20,
 } as const
 
 export const mobileNoteListFilterOptions: ReadonlyArray<{

@@ -1,3 +1,4 @@
+import { Sparkle } from "phosphor-react-native";
 import {
 	type ReactElement,
 	useCallback,
@@ -13,12 +14,15 @@ import {
 	type NativeSyntheticEvent,
 	type RefreshControlProps,
 	ScrollView,
+	StyleSheet,
 } from "react-native";
+import { Button } from "../components/ui/button";
 import { Text } from "../components/ui/text";
 import { MobileEditorBlocks } from "../components/workspace/MobileEditorBlocks";
 import { MobileFilePreview } from "../components/workspace/MobileFilePreview";
 import { MobileMarkdownSourceEditor } from "../components/workspace/MobileMarkdownSourceEditor";
 import { MobileWysiwygMarkdownEditor } from "../components/workspace/MobileWysiwygMarkdownEditor";
+import { mobilePaneFooterRowHeight } from "../components/workspace/mobilePaneFooterLayout";
 import { mobileText } from "../i18n/mobileText";
 import { MobileLayoutProbeReadout } from "../qa/MobileLayoutProbeReadout";
 import { useMobileLayoutProbe } from "../qa/mobileLayoutProbe";
@@ -32,6 +36,7 @@ import {
 	useMobileMetrics,
 	useMobileStyles,
 } from "../ui/theme/useMobileTheme";
+import { useMobileBottomInset } from "../ui/useMobileBottomInset";
 import { useMobileAttachmentImporter } from "../workspace/mobileAttachmentImport";
 import { useMobileAttachmentLinkOpener } from "../workspace/mobileAttachmentOpen";
 import { resolveDraftLeaveAction } from "../workspace/mobileDraftCleanup";
@@ -69,6 +74,9 @@ export type { EditorEditingMode } from "./TabletEditorPanel.types";
 export function TabletEditorPanel(props: TabletEditorPanelProps) {
 	const themeStyles = useMobileStyles(createEditorPanelStyles);
 	const { panelStyles } = themeStyles;
+	const mobileColors = useMobileColors();
+	const metrics = useMobileMetrics();
+	const bottomInset = useMobileBottomInset();
 	const refreshControl = useMobilePullToSync();
 	const {
 		compact,
@@ -204,6 +212,27 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
 				onScrollViewRef={setScrollViewNode}
 				refreshControl={refreshControl}
 			/>
+			{fileMode === "markdown" && onOpenSmartNotes ? (
+				<Button
+					accessibilityLabel={mobileText("editor.toolbar.openAi")}
+					android_ripple={{ color: "rgba(99, 102, 241, 0.2)", borderless: false }}
+					className="shadow-md active:opacity-90"
+					size="icon"
+					style={StyleSheet.flatten([
+						panelStyles.smartNotesFab,
+						{
+							bottom:
+								(effectiveEditing ? mobilePaneFooterRowHeight + bottomInset : bottomInset) +
+								metrics.size(16),
+						},
+					])}
+					testID="editor-smart-notes-action"
+					variant="ghost"
+					onPress={onOpenSmartNotes}
+				>
+					<Sparkle color={mobileColors.primary} size={metrics.size(20)} weight="fill" />
+				</Button>
+			) : null}
 			{layoutProbeEnabled ? (
 				<MobileLayoutProbeReadout
 					metrics={layoutProbe.metrics}
