@@ -3,7 +3,7 @@
     "name": "Tolaria",
     "slug": "tolaria-mobile",
     "scheme": "tolaria",
-    "version": "0.2.9",
+    "version": "0.2.10",
     "icon": "./assets/icon-round.png",
     "orientation": "default",
     "userInterfaceStyle": "automatic",
@@ -21,7 +21,7 @@
     },
     "android": {
       "package": "com.tolaria.mobile.dev",
-      "versionCode": 10,
+      "versionCode": 11,
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
