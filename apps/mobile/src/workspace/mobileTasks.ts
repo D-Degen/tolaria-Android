@@ -40,8 +40,7 @@ export type MobileTaskSection = { bucket: MobileTaskBucket; entries: MobileTaskE
 export const mobileTaskBucketOrder: MobileTaskBucket[] = ['overdue', 'today', 'upcoming', 'noDate', 'done']
 
 const CHECKBOX_PATTERN = /^(\s*(?:[-*+]|\d+[.)])\s+\[)([ xX])(\]\s+)(.*)$/u
-const DUE_MARKER_PATTERN = /\s*(?:📅|\bdue:)\s*(\d{4}-\d{2}-\d{2})/u
-const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/u
+const DUE_MARKER_PATTERN = /\s*(?:📅|🗓️|\[due::?|\(due::?|@due\(|\bdue:)\s*(\d{4}-\d{2}-\d{2}|\d{1,2}\.\d{1,2}\.\d{4})(?:\s*⏰?\s*\d{1,2}:\d{2})?\)?\]?/u
 const DUE_PROPERTY_KEYS = ['due', 'due_date', 'duedate', 'due date', 'deadline']
 const DONE_STATUSES = new Set(['done', 'completed', 'complete', 'closed', 'finished', 'erledigt', 'cancelled', 'canceled'])
 const MAX_ITEMS_PER_NOTE = 200
@@ -54,7 +53,7 @@ export const mobileTaskListLabels = {
   doneHidden: 'Erledigte anzeigen',
   doneShown: 'Erledigte ausblenden',
   empty: 'Keine Aufgaben. Notizen vom Typ „Task“ und alle Checkboxen (- [ ]) erscheinen hier.',
-  invalidDate: 'Bitte Datum als JJJJ-MM-TT eingeben',
+  invalidDate: 'Bitte Datum als JJJJ-MM-TT oder TT.MM.JJJJ eingeben',
   inheritedDue: 'von Notiz',
   nextWeek: 'In 1 Woche',
   openDueEditor: 'Fälligkeitsdatum ändern',
@@ -107,7 +106,8 @@ export function parseChecklistLine(line: string, lineIndex: number): MobileNoteC
   const match = CHECKBOX_PATTERN.exec(line)
   if (!match) return null
   const rawText = match[4]
-  const due = DUE_MARKER_PATTERN.exec(rawText)?.[1] ?? null
+  const rawDue = DUE_MARKER_PATTERN.exec(rawText)?.[1] ?? null
+  const due = rawDue ? normalizeDue(rawDue) : null
   const text = rawText.replace(DUE_MARKER_PATTERN, '').trim()
   if (!text) return null
   return { checked: match[2] !== ' ', due, line: lineIndex, text }
@@ -116,8 +116,9 @@ export function parseChecklistLine(line: string, lineIndex: number): MobileNoteC
 export type ChecklistItemChange = { checked?: boolean; due?: string | null }
 
 /**
- * Applies a change to a single checkbox line. Returns the original content when the line no longer
- * matches `expectedText` (stale list) or is not a checkbox anymore, so we never edit the wrong line.
+ * Applies a change to a single checkbox line.
+ * If the line index has drifted (e.g. from frontmatter or previous edits),
+ * searches the file for the matching checkbox line so edits are never silently lost.
  */
 export function applyChecklistItemChange(
   rawContent: string,
@@ -127,16 +128,44 @@ export function applyChecklistItemChange(
 ): string {
   const newline = rawContent.includes('\r\n') ? '\r\n' : '\n'
   const lines = rawContent.split(/\r?\n/u)
-  const current = lines[line]
-  if (current === undefined) return rawContent
-  const match = CHECKBOX_PATTERN.exec(current)
-  const parsed = parseChecklistLine(current, line)
-  if (!match || !parsed || parsed.text !== expectedText.trim()) return rawContent
+  let targetLine = line
+  let current = lines[targetLine]
+  let match = current !== undefined ? CHECKBOX_PATTERN.exec(current) : null
+  let parsed = match && current !== undefined ? parseChecklistLine(current, targetLine) : null
+
+  const trimmedExpected = expectedText.trim()
+  if (!match || !parsed || parsed.text !== trimmedExpected) {
+    let found = -1
+    for (let i = 0; i < lines.length; i += 1) {
+      const candidate = parseChecklistLine(lines[i], i)
+      if (candidate && candidate.text === trimmedExpected) {
+        found = i
+        break
+      }
+    }
+    if (found === -1) {
+      for (let i = 0; i < lines.length; i += 1) {
+        const candidate = parseChecklistLine(lines[i], i)
+        if (candidate && (candidate.text.startsWith(trimmedExpected) || trimmedExpected.startsWith(candidate.text))) {
+          found = i
+          break
+        }
+      }
+    }
+    if (found === -1) return rawContent
+    targetLine = found
+    current = lines[targetLine]
+    const fallbackMatch = CHECKBOX_PATTERN.exec(current)
+    const fallbackParsed = parseChecklistLine(current, targetLine)
+    if (!fallbackMatch || !fallbackParsed) return rawContent
+    match = fallbackMatch
+    parsed = fallbackParsed
+  }
 
   const checked = change.checked ?? parsed.checked
   const due = change.due === undefined ? parsed.due : normalizeDue(change.due)
   const suffix = due ? ` 📅 ${due}` : ''
-  lines[line] = `${match[1]}${checked ? 'x' : ' '}${match[3]}${parsed.text}${suffix}`
+  lines[targetLine] = `${match[1]}${checked ? 'x' : ' '}${match[3]}${parsed.text}${suffix}`
   return lines.join(newline)
 }
 
@@ -239,12 +268,32 @@ export function mobileShiftIsoDate(today: string, days: number): string {
 }
 
 export function normalizeDue(value: string | null): string | null {
-  const trimmed = value?.trim() ?? ''
-  if (!ISO_DATE_PATTERN.test(trimmed)) return null
-  const [year, month, day] = trimmed.split('-').map(Number)
-  const date = new Date(year, month - 1, day)
-  const valid = date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day
-  return valid ? trimmed : null
+  if (!value) return null
+  const trimmed = value.trim()
+  const isoMatch = /^(\d{4})-(\d{2})-(\d{2})(?:[T\s].*)?$/u.exec(trimmed)
+  if (isoMatch) {
+    const [, y, m, d] = isoMatch
+    const year = Number(y)
+    const month = Number(m)
+    const day = Number(d)
+    const date = new Date(year, month - 1, day)
+    const valid = date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day
+    return valid ? `${y}-${m}-${d}` : null
+  }
+  const deMatch = /^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:[T\s].*)?$/u.exec(trimmed)
+  if (deMatch) {
+    const [, d, m, y] = deMatch
+    const year = Number(y)
+    const month = Number(m)
+    const day = Number(d)
+    const date = new Date(year, month - 1, day)
+    const valid = date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day
+    if (!valid) return null
+    const monthStr = `${month}`.padStart(2, '0')
+    const dayStr = `${day}`.padStart(2, '0')
+    return `${year}-${monthStr}-${dayStr}`
+  }
+  return null
 }
 
 function isoDateFromValue(value: MobilePropertyValue): string | null {

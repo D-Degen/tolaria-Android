@@ -52,6 +52,24 @@ describe('extractChecklistItems', () => {
     expect(items[3].checked).toBe(true)
     expect(items[5].due).toBe('2026-12-24')
   })
+
+  it('parses German dates, calendar emojis and dataview/task formats from notes', () => {
+    const raw = `
+- [ ] German date 📅 31.10.2026
+- [ ] Calendar emoji 🗓️ 2026-11-15
+- [ ] Dataview syntax [due:: 2026-12-01]
+- [ ] At-due syntax @due(2026-12-05)
+- [ ] German with time 📅 07.11.2026 ⏰ 14:00
+`
+    const parsed = extractChecklistItems(raw)
+    expect(parsed.map((item) => [item.text, item.due])).toEqual([
+      ['German date', '2026-10-31'],
+      ['Calendar emoji', '2026-11-15'],
+      ['Dataview syntax', '2026-12-01'],
+      ['At-due syntax', '2026-12-05'],
+      ['German with time', '2026-11-07'],
+    ])
+  })
 })
 
 describe('applyChecklistItemChange', () => {
@@ -90,7 +108,14 @@ describe('applyChecklistItemChange', () => {
   })
 
   it('ignores invalid due values by clearing them instead of writing garbage', () => {
-    expect(applyChecklistItemChange(doc, 6, 'APK bauen', { due: '31.12.2026' }).split('\n')[6]).toBe('- [ ] APK bauen')
+    expect(applyChecklistItemChange(doc, 6, 'APK bauen', { due: 'invalid-date' }).split('\n')[6]).toBe('- [ ] APK bauen')
+    expect(applyChecklistItemChange(doc, 6, 'APK bauen', { due: '31.12.2026' }).split('\n')[6]).toBe('- [ ] APK bauen 📅 2026-12-31')
+  })
+
+  it('finds checkboxes when line index has drifted', () => {
+    // line passed is 0, but 'APK bauen' is at line 6
+    const updated = applyChecklistItemChange(doc, 0, 'APK bauen', { due: '2026-12-31' })
+    expect(updated.split('\n')[6]).toBe('- [ ] APK bauen 📅 2026-12-31')
   })
 })
 

@@ -12,6 +12,7 @@ import { mobileText } from '../i18n/mobileText'
 import { useMobileSettings } from './useMobileSettings'
 import { MobileAppearanceSettings } from './MobileAppearanceSettings'
 import { MobilePrivacySettings } from './MobilePrivacySettings'
+import { MobileTaskNotificationSettings } from './MobileTaskNotificationSettings'
 import { MobileDiagnosticsSettings } from './MobileDiagnosticsSettings'
 import { MobileUpdateSettings } from './MobileUpdateSettings'
 import { useMobileUpdateChannel } from './useMobileUpdateChannel'
@@ -41,6 +42,7 @@ export function MobileSettingsSheet({ manager }: { manager: ReturnType<typeof us
           <MobileVaultManager manager={manager} />
           {!manager.conflictReview && <>
           <MobileAppearanceSettings />
+          <MobileTaskNotificationSettings />
           <MobileUpdateSettings updates={updates} />
           <MobilePrivacySettings />
           <MobileDiagnosticsSettings />

@@ -21,6 +21,9 @@ import { propertyWorkspaceActions, relationshipWorkspaceActions, retargetWorkspa
 import { actionSheetWorkspaceActions } from './tabletWorkspaceActionOpeners'
 import type { TabletWorkspaceNavigation, SetOpenAction, ApplyWorkspaceEdit, WorkspaceActionsContext, SaveSelectedEdit } from './tabletWorkspaceController.types'
 import { emptyReadOnlyForm } from './tabletWorkspaceActionForms'
+import { useMobileSettings } from '../settings/useMobileSettings'
+import { buildMobileTaskEntries } from '../workspace/mobileTasks'
+import { syncTaskNotifications } from '../workspace/mobileTaskNotifications'
 
 type TabletWorkspaceControllerRequest = {
   repository: ReadOnlyWorkspaceRepository
@@ -82,6 +85,17 @@ export function useTabletWorkspaceController(request: TabletWorkspaceControllerR
   })
   const openActionSheetQaTarget = useControllerQaTarget(actionSheetActions, workspaceSnapshot)
   const selectedNoteRead = useMobileNoteRead({ applyEdit: pipeline.applyWorkspaceEdit, note: navigation.selectedNote, repository, request: repositoryRequest })
+  const { settings } = useMobileSettings()
+
+  useEffect(() => {
+    const allNotes = workspaceSnapshot.allNotes ?? workspaceSnapshot.notes
+    const entries = buildMobileTaskEntries(allNotes)
+    void syncTaskNotifications(entries, {
+      defaultTime: settings.taskNotificationTime,
+      enabled: settings.taskNotificationsEnabled,
+    })
+  }, [settings.taskNotificationTime, settings.taskNotificationsEnabled, workspaceSnapshot])
+
   return {
     ...actionSheetActions,
     ...navigation,

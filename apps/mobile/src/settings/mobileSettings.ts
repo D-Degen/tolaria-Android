@@ -2,13 +2,22 @@ export type MobileSettings = {
   autoGit: boolean
   analytics: boolean
   crashReporting: boolean
+  taskNotificationsEnabled: boolean
+  taskNotificationTime: string
   theme: 'system' | 'light' | 'dark'
   uiScale: 1.2
   updateChannel: 'stable' | 'alpha'
 }
 
 export const defaultMobileSettings: MobileSettings = {
-  autoGit: false, analytics: false, crashReporting: false, theme: 'system', uiScale: 1.2, updateChannel: 'stable',
+  autoGit: false,
+  analytics: false,
+  crashReporting: false,
+  taskNotificationsEnabled: true,
+  taskNotificationTime: '09:00',
+  theme: 'system',
+  uiScale: 1.2,
+  updateChannel: 'stable',
 }
 
 export function parseMobileSettings(raw: string | null): MobileSettings {
@@ -21,10 +30,18 @@ export function parseMobileSettings(raw: string | null): MobileSettings {
     autoGit: setting(value.autoGit, [true, false], defaultMobileSettings.autoGit),
     analytics: setting(value.analytics, [true, false], defaultMobileSettings.analytics),
     crashReporting: setting(value.crashReporting, [true, false], defaultMobileSettings.crashReporting),
+    taskNotificationsEnabled: setting(value.taskNotificationsEnabled, [true, false], defaultMobileSettings.taskNotificationsEnabled),
+    taskNotificationTime: notificationTimeSetting(value.taskNotificationTime, defaultMobileSettings.taskNotificationTime),
     theme: setting(value.theme, ['system', 'light', 'dark'], defaultMobileSettings.theme),
     uiScale: defaultMobileSettings.uiScale,
     updateChannel: setting(value.updateChannel, ['stable', 'alpha'], defaultMobileSettings.updateChannel),
   }
+}
+
+function notificationTimeSetting(value: unknown, fallback: string): string {
+  if (typeof value !== 'string') return fallback
+  const trimmed = value.trim()
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(trimmed) ? trimmed : fallback
 }
 
 function setting<T extends string | number | boolean>(value: unknown, allowed: T[], fallback: T): T {

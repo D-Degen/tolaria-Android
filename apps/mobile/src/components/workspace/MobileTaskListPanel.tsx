@@ -209,11 +209,11 @@ function DueEditor({ current, today, onPick }: { current: string | null; today: 
         ))}
       </View>
       <TextInput
-        accessibilityLabel="Datum (JJJJ-MM-TT)"
+        accessibilityLabel="Datum (JJJJ-MM-TT oder TT.MM.JJJJ)"
         autoCapitalize="none"
         keyboardType="numbers-and-punctuation"
         maxLength={10}
-        placeholder="JJJJ-MM-TT"
+        placeholder="JJJJ-MM-TT oder TT.MM.JJJJ"
         placeholderTextColor={colors.textMuted}
         style={[styles.dateInput, { borderColor: invalid ? colors.danger : colors.border, color: colors.text }]}
         testID="task-due-input"

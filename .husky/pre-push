@@ -163,7 +163,7 @@ if [ -n "$PUSH_TARGET" ]; then
       apps/mobile/*)
         MOBILE_CHANGED=true
         ;;
-      .github/workflows/*|.husky/*|docs/*|*.md)
+      .github/workflows/*|.husky/*|docs/*|*.md|pnpm-lock.yaml)
         ;;
       *)
         APP_CHANGED=true
