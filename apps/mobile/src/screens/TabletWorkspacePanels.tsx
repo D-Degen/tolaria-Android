@@ -210,6 +210,7 @@ function tabletNoteListPanelProps(
 	props: TabletPanelHostProps,
 ): ComponentProps<typeof MobileNoteListPanel> {
 	return {
+		activeItemId: props.activeItemId,
 		bulkActions: tabletNoteListBulkActions(props),
 		compact: props.compactTablet,
 		displayPropertyKeys: props.noteListProperties,

@@ -9,7 +9,7 @@ export type MobileAnalyticsEvent =
   | { name: 'mobile_folder_open_failed'; stage: 'picker' | 'import' | 'catalog' | 'prepare' }
   | { name: 'file_preview_opened' | 'file_preview_failed'; preview_kind: 'image' | 'pdf' }
   | { name: 'theme_mode_changed'; mode: 'system' | 'light' | 'dark' }
-  | { name: 'mobile_note_swipe_used'; action: 'favorite' | 'archive' | 'delete' }
+  | { name: 'mobile_note_swipe_used'; action: 'favorite' | 'archive' | 'delete' | 'organize' }
   | { name: 'mobile_setting_changed'; setting: 'theme' | 'uiScale' | 'autoGit' }
   | { name: 'mobile_git_operation_requested'; operation: 'commit' | 'sync' | 'autoSync' | 'resolveConflicts' }
   | { name: 'mobile_folder_sync_requested'; operation: 'sync' | 'resolveConflicts' }

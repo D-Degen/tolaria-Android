@@ -11,6 +11,7 @@ const input = vi.hoisted(() => ({
   onEnd: undefined as ((event: { translationX: number }) => void) | undefined,
   onLayout: undefined as ((event: { nativeEvent: { layout: { width: number } } }) => void) | undefined,
   onArchive: vi.fn(),
+  onOrganize: vi.fn(),
 }))
 vi.mock('react-native-gesture-handler/ReanimatedSwipeable', () => ({ default: nativeSwipe }))
 vi.mock('react-native', () => ({ View: ({ children, onLayout }: { children: ReactNode; onLayout: typeof input.onLayout }) => {
@@ -40,7 +41,7 @@ vi.mock('../../ui/theme/useMobileTheme', () => ({ useMobileColors: () => ({ card
 vi.mock('../../analytics/useMobileAnalytics', () => ({ useMobileAnalytics: () => ({ capture: vi.fn() }) }))
 vi.mock('./MobileNoteSwipeActions', () => ({ MobileNoteSwipeActions: () => null }))
 
-afterEach(() => { nativeSwipe.mockClear(); input.onArchive.mockClear() })
+afterEach(() => { nativeSwipe.mockClear(); input.onArchive.mockClear(); input.onOrganize.mockClear() })
 
 describe('note row input ownership', () => {
   it('leaves two-finger trackpad scrolling to the note list', () => {
@@ -69,16 +70,25 @@ describe('note row input ownership', () => {
     input.onEnd?.({ translationX: 290 })
     expect(input.onArchive).not.toHaveBeenCalled()
   })
+
+  it('commits organize instead of archive on a full left swipe when isInbox is true', () => {
+    renderRow(false, true)
+    input.onLayout?.({ nativeEvent: { layout: { width: 300 } } })
+    input.onEnd?.({ translationX: -290 })
+    expect(input.onOrganize).toHaveBeenCalledWith([fixtureNotes[0].id])
+    expect(input.onArchive).not.toHaveBeenCalled()
+  })
 })
 
-function renderRow(disabled = false) {
+function renderRow(disabled = false, isInbox = false) {
   const root = createRoot(document.createElement('div'))
   try {
     flushSync(() => root.render(createElement(MobileSwipeableNoteRow, {
       note: fixtureNotes[0],
       disabled,
+      isInbox,
       children: 'Note',
-      actions: { onArchive: input.onArchive, onDelete: vi.fn(), onToggleFavorite: vi.fn() },
+      actions: { onArchive: input.onArchive, onDelete: vi.fn(), onOrganize: input.onOrganize, onToggleFavorite: vi.fn() },
     })))
     return nativeSwipe.mock.calls.at(-1)?.[0] as {
       enableTrackpadTwoFingerGesture?: boolean

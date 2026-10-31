@@ -51,11 +51,13 @@ import {
 } from './useMobileNoteListSelection'
 
 type MobileNoteListPanelProps = {
+  activeItemId?: string | null
   bulkActions?: MobileNoteListBulkActions
   compact: boolean
   displayPropertyKeys?: string[]
   emptyVault?: boolean
   fullWidth?: boolean
+  isInbox?: boolean
   leading?: ReactNode
   toolbarTrailing?: ReactNode
   showCreateAction?: boolean
@@ -111,6 +113,7 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
     typeDefinitions,
   } = props
   const onFilterChange = noteListFilterAction(props)
+  const isInbox = props.isInbox ?? (props.activeItemId === 'inbox' || title === mobileCopy.inbox || title === 'Inbox')
   const activeNoteId = selectedNoteId ?? notes[0]?.id ?? null
   const layoutProbe = useMobileLayoutProbe(layoutProbeEnabled)
   const bulkSelection = useMobileNoteListBulkSelection({
@@ -153,6 +156,7 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
       {searchQuery ? <SearchPill searchQuery={searchQuery} /> : null}
       <View style={styles.listBody}>
         <NoteListContent
+          isInbox={isInbox}
           rowActions={mobileNoteListRowActions(props.bulkActions, props.onToggleNoteFavorite)}
           activeNoteId={activeNoteId}
           bulkSelection={bulkSelection}
@@ -238,6 +242,7 @@ function NoteListFilterPills({ active, counts, onChange }: NoteListFilterPillsPr
 }
 
 type NoteListContentProps = {
+  isInbox: boolean
   rowActions?: MobileNoteRowActions
   activeNoteId: string | null
   bulkSelection: ReturnType<typeof useMobileNoteListBulkSelection>
@@ -263,6 +268,7 @@ function NoteListContent(props: NoteListContentProps) {
     bulkSelection,
     displayPropertyKeys,
     emptyVault,
+    isInbox,
     layoutProbe,
     neighborhood,
     notes,
@@ -313,6 +319,7 @@ function NoteListContent(props: NoteListContentProps) {
             rowActions: bulkSelection.selectedNotes.length === 0 ? props.rowActions : undefined,
             activeNoteId,
             displayPropertyKeys,
+            isInbox,
             layoutProbe,
             multiSelected: bulkSelection.selectedNoteIds.has(note.id),
             note,

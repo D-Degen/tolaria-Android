@@ -1,6 +1,6 @@
 import { useMobileStyles } from '../../ui/theme/useMobileTheme'
 import type { MobileColors } from '../../ui/theme/mobilePalette'
-import { ArchiveIcon, Star, Trash } from 'phosphor-react-native'
+import { ArchiveIcon, CheckCircle, Star, Trash } from 'phosphor-react-native'
 import { StyleSheet, View } from 'react-native'
 import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated'
 import { mobileText } from '../../i18n/mobileText'
@@ -11,10 +11,12 @@ import { fullSwipeNoteAction } from './mobileNoteSwipe'
 type ActionProps = {
   archived?: boolean
   favorite: boolean
+  isInbox?: boolean
   noteId: string
   onArchive: () => void
   onDelete: () => void
   onFavorite: () => void
+  onOrganize?: () => void
   translation: SharedValue<number>
   width: SharedValue<number>
 }
@@ -22,9 +24,10 @@ type ActionProps = {
 export function MobileNoteSwipeActions(props: ActionProps) {
   const { styles, mobileColors } = useMobileStyles(createThemeStyles)
   const baseWidth = 216
+  const primaryAction = props.isInbox ? 'organize' : 'archive'
   const expansion = useAnimatedStyle(() => ({ width: Math.max(baseWidth, Math.abs(props.translation.value)) }))
   const secondaryStyle = useAnimatedStyle(() => ({
-    width: fullSwipeNoteAction(props.translation.value, props.width.value) === 'archive' ? 0 : 72,
+    width: fullSwipeNoteAction(props.translation.value, props.width.value, primaryAction) === primaryAction ? 0 : 72,
     overflow: 'hidden',
   }))
   return (
@@ -45,9 +48,25 @@ export function MobileNoteSwipeActions(props: ActionProps) {
             <Trash color={mobileColors.textInverse} size={24} />
           </Button>
         </Animated.View>
-        <Button accessibilityLabel={mobileText(props.archived ? 'command.note.unarchiveNote' : 'command.note.archiveNote')} style={[styles.action, styles.archive]} testID={`note-swipe-archive-${props.noteId}`} onPress={props.onArchive}>
-          <ArchiveIcon color={mobileColors.textInverse} size={24} />
-        </Button>
+        {props.isInbox ? (
+          <Button
+            accessibilityLabel={mobileText('command.note.markOrganized')}
+            style={[styles.action, styles.organize]}
+            testID={`note-swipe-organize-${props.noteId}`}
+            onPress={props.onOrganize}
+          >
+            <CheckCircle color={mobileColors.textInverse} size={24} weight="fill" />
+          </Button>
+        ) : (
+          <Button
+            accessibilityLabel={mobileText(props.archived ? 'command.note.unarchiveNote' : 'command.note.archiveNote')}
+            style={[styles.action, styles.archive]}
+            testID={`note-swipe-archive-${props.noteId}`}
+            onPress={props.onArchive}
+          >
+            <ArchiveIcon color={mobileColors.textInverse} size={24} />
+          </Button>
+        )}
       </Animated.View>
     </View>
   )
@@ -59,6 +78,7 @@ function createThemeStyles(mobileColors: MobileColors) {
     action: { flex: 1, height: '100%', borderRadius: 0, padding: 0, alignItems: 'center', justifyContent: 'center' },
     favorite: { backgroundColor: mobileColors.primary },
     archive: { backgroundColor: mobileColors.green },
+    organize: { backgroundColor: mobileColors.green },
     delete: { backgroundColor: mobileColors.danger },
   })
   return { mobileColors, styles }

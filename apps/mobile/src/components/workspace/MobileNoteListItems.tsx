@@ -27,6 +27,7 @@ export type MobileNoteListRowProps = {
   activeNoteId: string | null
   displayPropertyKeys: string[]
   forceSelected?: boolean
+  isInbox?: boolean
   layoutProbe: MobileLayoutProbe
   multiSelected?: boolean
   note: MobileNote
@@ -43,6 +44,7 @@ export function MobileNoteListRow(props: MobileNoteListRowProps) {
     activeNoteId,
     displayPropertyKeys,
     forceSelected = false,
+    isInbox = false,
     layoutProbe,
     multiSelected = false,
     note,
@@ -53,7 +55,7 @@ export function MobileNoteListRow(props: MobileNoteListRowProps) {
     typeDefinitions,
   } = props
   return (
-    <MobileSwipeableNoteRow actions={props.rowActions} note={note}>
+    <MobileSwipeableNoteRow actions={props.rowActions} isInbox={isInbox} note={note}>
       <MobileListRow
         chips={
           <NoteRowChips

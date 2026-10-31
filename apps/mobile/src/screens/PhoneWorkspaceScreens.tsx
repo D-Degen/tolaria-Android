@@ -44,6 +44,7 @@ function PhoneNoteListScreen({
       ) : (
         <MobileNoteListPanel
           compact
+          activeItemId={controller.activeItemId}
           leading={<PhoneSidebarButton onOpenSidebar={openSidebar} />}
           onToggleNoteFavorite={controller.onToggleNoteFavorite}
           bulkActions={phoneNoteListBulkActions(controller)}

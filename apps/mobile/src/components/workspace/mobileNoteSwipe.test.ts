@@ -19,4 +19,9 @@ describe('note row full swipe', () => {
     expect(fullSwipeNoteAction(-450, 600)).toBe('archive')
     expect(fullSwipeNoteAction(450, 0)).toBeNull()
   })
+
+  it('commits organize on a full left swipe when configured for inbox', () => {
+    expect(fullSwipeNoteAction(-260, 340, 'organize')).toBe('organize')
+    expect(fullSwipeNoteAction(-150, 340, 'organize')).toBeNull()
+  })
 })

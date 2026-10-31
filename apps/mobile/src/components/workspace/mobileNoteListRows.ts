@@ -16,7 +16,12 @@ export function mobileNoteListRowActions(
   onToggleFavorite?: (noteId: string) => void,
 ): MobileNoteRowActions | undefined {
   if (!bulkActions || !onToggleFavorite) return undefined
-  return { ...bulkActions, onToggleFavorite }
+  return {
+    onArchive: bulkActions.onArchive,
+    onDelete: bulkActions.onDelete,
+    onOrganize: bulkActions.onOrganize,
+    onToggleFavorite,
+  }
 }
 
 export function mobileNeighborhoodRows(neighborhood: MobileNeighborhood): MobileNeighborhoodRow[] {
