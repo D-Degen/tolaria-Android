@@ -15,10 +15,20 @@ async function getNotificationsModule() {
 	}
 }
 
+function computeFutureTarget(secondsInFuture: number): {
+	targetTime: Date;
+	timeString: string;
+} {
+	const targetTime = new Date(Date.now() + secondsInFuture * 1000);
+	const timeString = `${String(targetTime.getHours()).padStart(2, "0")}:${String(targetTime.getMinutes()).padStart(2, "0")}:${String(targetTime.getSeconds()).padStart(2, "0")}`;
+	return { targetTime, timeString };
+}
+
 export function MobileDeveloperSettings() {
 	const colors = useMobileColors();
 	const styles = useMobileStyles(createStyles);
-	const [permissionStatus, setPermissionStatus] = useState<string>("Noch nicht geprüft");
+	const [permissionStatus, setPermissionStatus] =
+		useState<string>("Noch nicht geprüft");
 	const [scheduledCount, setScheduledCount] = useState<number | null>(null);
 	const [scheduledList, setScheduledList] = useState<
 		Array<{ id: string; title: string; triggerDesc: string }>
@@ -95,6 +105,53 @@ export function MobileDeveloperSettings() {
 		}
 	};
 
+	const triggerExactDateNotification = async (secondsInFuture: number) => {
+		setFeedback(null);
+		try {
+			const Notifications = await getNotificationsModule();
+			if (!Notifications) {
+				setFeedback("expo-notifications nicht verfügbar.");
+				return;
+			}
+
+			if (Platform.OS === "android") {
+				await Notifications.setNotificationChannelAsync("tasks", {
+					enableVibrate: true,
+					importance: Notifications.AndroidImportance.HIGH,
+					name: "Aufgaben-Erinnerungen",
+					sound: "default",
+					vibrationPattern: [0, 250, 250, 250],
+				});
+			}
+
+			const { targetTime, timeString } = computeFutureTarget(secondsInFuture);
+
+			const id = await Notifications.scheduleNotificationAsync({
+				content: {
+					body: `Geplanter Uhrzeit-Alarm für ${timeString} wurde ausgelöst.`,
+					sound: "default",
+					title: `Tolaria Uhrzeit-Test (${timeString})`,
+				},
+				trigger: {
+					channelId: "tasks",
+					date: targetTime,
+					type: Notifications.SchedulableTriggerInputTypes.DATE,
+				} as unknown as Parameters<
+					typeof Notifications.scheduleNotificationAsync
+				>[0]["trigger"],
+			});
+
+			setFeedback(
+				`Uhrzeit-Alarm für ${timeString} geplant (in ${secondsInFuture}s, ID: ${id})`,
+			);
+			void refreshScheduled();
+		} catch (err) {
+			setFeedback(
+				`Fehler beim Planen des Uhrzeit-Alarms: ${err instanceof Error ? err.message : String(err)}`,
+			);
+		}
+	};
+
 	const refreshScheduled = async () => {
 		try {
 			const Notifications = await getNotificationsModule();
@@ -160,6 +217,11 @@ export function MobileDeveloperSettings() {
 						icon={<Clock size={16} color={colors.text} />}
 						label="In 15s (Hintergrund)"
 						onPress={() => void triggerTestNotification(15)}
+					/>
+					<MobileButton
+						icon={<Clock size={16} color={colors.text} />}
+						label="In 1 Min (Uhrzeit-Alarm)"
+						onPress={() => void triggerExactDateNotification(60)}
 					/>
 				</View>
 

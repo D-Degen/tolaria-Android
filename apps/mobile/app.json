@@ -3,7 +3,7 @@
     "name": "Tolaria",
     "slug": "tolaria-mobile",
     "scheme": "tolaria",
-    "version": "0.2.13",
+    "version": "0.2.14",
     "icon": "./assets/icon-round.png",
     "orientation": "default",
     "userInterfaceStyle": "automatic",
@@ -21,8 +21,16 @@
     },
     "android": {
       "package": "com.tolaria.mobile.dev",
-      "versionCode": 14,
+      "versionCode": 15,
       "softwareKeyboardLayoutMode": "resize",
+      "permissions": [
+        "INTERNET",
+        "POST_NOTIFICATIONS",
+        "RECEIVE_BOOT_COMPLETED",
+        "SCHEDULE_EXACT_ALARM",
+        "USE_EXACT_ALARM",
+        "VIBRATE"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FAFBFF"

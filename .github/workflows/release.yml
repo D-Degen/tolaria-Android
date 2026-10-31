@@ -1,14 +1,7 @@
 name: Release (Alpha)
 
 on:
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - ".husky/**"
-      - ".github/workflows/deploy-docs.yml"
-      - ".github/workflows/release.yml"
-      - "site/**"
+  workflow_dispatch:
 
 concurrency:
   group: release-alpha-${{ github.ref }}

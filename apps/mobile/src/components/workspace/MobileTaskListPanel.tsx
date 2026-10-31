@@ -35,7 +35,7 @@ import {
 	MobileToolbarSpacer,
 	MobileToolbarTitle,
 } from "../../ui/MobilePanel";
-import { openAndroidDatePicker } from "../../ui/nativeDatePicker";
+import { openAndroidDateTimeFlow } from "../../ui/nativeDatePicker";
 import { useMobileColors } from "../../ui/theme/useMobileTheme";
 import {
 	buildMobileTaskEntries,
@@ -373,7 +373,7 @@ function TaskRow({
 						]}
 					>
 						{entry.due
-							? `${formatDue(entry.due, today)}${entry.inheritedDue ? ` (${mobileTaskListLabels.inheritedDue})` : ""}`
+							? `${formatDue(entry.due, today)}${entry.time ? ` ⏰ ${entry.time}` : ""}${entry.inheritedDue ? ` (${mobileTaskListLabels.inheritedDue})` : ""}`
 							: "—"}
 					</Text>
 				</Pressable>
@@ -381,9 +381,10 @@ function TaskRow({
 			{editing ? (
 				<DueEditor
 					current={entry.inheritedDue ? null : entry.due}
+					currentTime={entry.time ?? null}
 					today={today}
-					onPick={(due) => {
-						const edit = mobileTaskDueEdit(entry, note, due);
+					onPick={(due, time) => {
+						const edit = mobileTaskDueEdit(entry, note, due, time);
 						if (!edit) return false;
 						onApplyEdit(edit);
 						onCloseEditor();
@@ -397,12 +398,14 @@ function TaskRow({
 
 function DueEditor({
 	current,
+	currentTime,
 	today,
 	onPick,
 }: {
 	current: string | null;
+	currentTime?: string | null;
 	today: string;
-	onPick: (due: string | null) => boolean;
+	onPick: (due: string | null, time?: string | null) => boolean;
 }) {
 	const colors = useMobileColors();
 	const [text, setText] = useState(current ?? "");
@@ -428,9 +431,11 @@ function DueEditor({
 	};
 
 	const handleOpenNativePicker = () => {
-		openAndroidDatePicker({
-			onSelect: (due) => {
-				onPick(due);
+		void openAndroidDateTimeFlow({
+			initialDate: current ? new Date(current) : new Date(),
+			initialTime: currentTime ?? undefined,
+			onSelect: (due, time) => {
+				onPick(due, time);
 			},
 		});
 	};

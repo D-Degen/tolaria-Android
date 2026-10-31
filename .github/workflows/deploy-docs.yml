@@ -1,18 +1,6 @@
 name: Deploy docs
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/deploy-docs.yml"
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - "scripts/build-agent-docs.mjs"
-      - "scripts/assemble-pages-site.sh"
-      - "scripts/build-release-download-page.ts"
-      - "scripts/build-release-history-page.ts"
-      - "release-notes/**"
-      - "site/**"
   workflow_dispatch:
 
 permissions:

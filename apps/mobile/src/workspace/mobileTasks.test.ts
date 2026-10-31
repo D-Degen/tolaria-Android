@@ -62,12 +62,12 @@ describe('extractChecklistItems', () => {
 - [ ] German with time 📅 07.11.2026 ⏰ 14:00
 `
     const parsed = extractChecklistItems(raw)
-    expect(parsed.map((item) => [item.text, item.due])).toEqual([
-      ['German date', '2026-10-31'],
-      ['Calendar emoji', '2026-11-15'],
-      ['Dataview syntax', '2026-12-01'],
-      ['At-due syntax', '2026-12-05'],
-      ['German with time', '2026-11-07'],
+    expect(parsed.map((item) => [item.text, item.due, item.time])).toEqual([
+      ['German date', '2026-10-31', null],
+      ['Calendar emoji', '2026-11-15', null],
+      ['Dataview syntax', '2026-12-01', null],
+      ['At-due syntax', '2026-12-05', null],
+      ['German with time', '2026-11-07', '14:00'],
     ])
   })
 })
@@ -81,9 +81,9 @@ describe('applyChecklistItemChange', () => {
     after.forEach((line, index) => { if (index !== 6) expect(line).toBe(before[index]) })
   })
 
-  it('sets, replaces and removes the due marker', () => {
-    const set = applyChecklistItemChange(doc, 7, 'Tests laufen lassen', { due: '2026-11-05' })
-    expect(set.split('\n')[7]).toBe('- [x] Tests laufen lassen 📅 2026-11-05')
+  it('sets, replaces and removes the due marker and time', () => {
+    const set = applyChecklistItemChange(doc, 7, 'Tests laufen lassen', { due: '2026-11-05', time: '16:30' })
+    expect(set.split('\n')[7]).toBe('- [x] Tests laufen lassen 📅 2026-11-05 ⏰ 16:30')
     const moved = applyChecklistItemChange(doc, 6, 'APK bauen', { due: '2026-11-09' })
     expect(moved.split('\n')[6]).toBe('- [ ] APK bauen 📅 2026-11-09')
     const cleared = applyChecklistItemChange(doc, 6, 'APK bauen', { due: null })

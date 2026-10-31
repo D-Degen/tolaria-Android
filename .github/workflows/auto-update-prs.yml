@@ -4,8 +4,7 @@ name: Auto-update PR branches
 # so they stay up to date and can be auto-merged without manual rebase.
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 jobs:
   update-prs:

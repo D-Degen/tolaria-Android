@@ -14,6 +14,7 @@ describe('mobileTaskNotifications', () => {
     expect(parseTaskTime('Zahnarzt um 08:15')).toBe('08:15')
     expect(parseTaskTime('Call at 9:00')).toBe('09:00')
     expect(parseTaskTime('time: 16:45')).toBe('16:45')
+    expect(parseTaskTime('Standup 10:15')).toBe('10:15')
     expect(parseTaskTime('Normale Aufgabe')).toBeNull()
   })
 
@@ -25,7 +26,7 @@ describe('mobileTaskNotifications', () => {
     expect(timestampCustom).toBe(new Date(2026, 10, 5, 15, 30, 0, 0).getTime())
   })
 
-  it('builds notification payload for open tasks with due date', () => {
+  it('builds notification payload for open tasks with due date using entry.time or title', () => {
     const entry: MobileTaskEntry = {
       done: false,
       due: '2026-11-05',
@@ -36,7 +37,8 @@ describe('mobileTaskNotifications', () => {
       noteId: 'note.md',
       parentIsTask: false,
       subtitle: 'Ideen',
-      title: 'Review machen ⏰ 10:00',
+      time: '11:45',
+      title: 'Review machen',
     }
 
     const payload = buildTaskNotificationPayload(entry, '09:00')
@@ -44,7 +46,7 @@ describe('mobileTaskNotifications', () => {
       body: 'In Notiz: Ideen',
       identifier: 'tolaria:task:checkbox:1',
       title: 'Review machen',
-      triggerTimestamp: new Date(2026, 10, 5, 10, 0, 0, 0).getTime(),
+      triggerTimestamp: new Date(2026, 10, 5, 11, 45, 0, 0).getTime(),
     })
   })
 

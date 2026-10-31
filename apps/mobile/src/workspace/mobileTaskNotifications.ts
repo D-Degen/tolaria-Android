@@ -1,4 +1,5 @@
 import { Platform } from "react-native";
+import { logDiagnostic } from "../diagnostics/mobileDiagnostics";
 import type { MobileTaskEntry } from "./mobileTasks";
 
 async function getNotifications() {
@@ -57,13 +58,13 @@ export async function ensureNotificationPermissions(): Promise<boolean> {
 }
 
 export const TASK_TIME_PATTERN =
-	/(?:⏰|\bum\s*|\bat\s*|\btime:)\s*([01]?\d|2[0-3]):([0-5]\d)/u;
+	/(?:(?:⏰|\bum\s*|\bat\s*|\btime:)\s*([01]?\d|2[0-3]):([0-5]\d)|\b([01]?\d|2[0-3]):([0-5]\d)\b)/u;
 
 export function parseTaskTime(text: string): string | null {
 	const match = TASK_TIME_PATTERN.exec(text);
 	if (!match) return null;
-	const hours = match[1].padStart(2, "0");
-	const minutes = match[2];
+	const hours = (match[1] ?? match[3]).padStart(2, "0");
+	const minutes = match[2] ?? match[4];
 	return `${hours}:${minutes}`;
 }
 
@@ -98,7 +99,7 @@ export function buildTaskNotificationPayload(
 	defaultTime: string,
 ): TaskNotificationPayload | null {
 	if (entry.done || !entry.due) return null;
-	const taskTime = parseTaskTime(entry.title);
+	const taskTime = entry.time ?? parseTaskTime(entry.title);
 	const triggerTimestamp = calculateTaskNotificationTimestamp(
 		entry.due,
 		defaultTime,
@@ -160,8 +161,17 @@ export const defaultNotificationScheduler: NotificationScheduler = {
 					typeof Notifications.scheduleNotificationAsync
 				>[0]["trigger"],
 			});
-		} catch {
-			// Ignore if permission not granted or in tests
+			logDiagnostic(
+				"info",
+				"notifications",
+				`Scheduled task reminder: ${payload.identifier} at ${new Date(payload.triggerTimestamp).toISOString()}`,
+			);
+		} catch (err) {
+			logDiagnostic(
+				"warn",
+				"notifications",
+				`Failed to schedule task reminder ${payload.identifier}: ${err instanceof Error ? err.message : String(err)}`,
+			);
 		}
 	},
 };
