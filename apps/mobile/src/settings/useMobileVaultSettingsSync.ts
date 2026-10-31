@@ -11,30 +11,38 @@ export function useMobileVaultSettingsSync(
 	update: (next: Partial<MobileSettings>) => Promise<boolean | undefined>,
 	fileSystem = expoWorkspaceFileSystem,
 ) {
-	const lastSyncContentRef = useRef<string | null>(null);
-	const isSyncingFromVaultRef = useRef(false);
+	const lastLoadedVaultUriRef = useRef<string | null>(null);
+	const lastWrittenJsonRef = useRef<string | null>(null);
+	const isUpdatingFromVaultRef = useRef(false);
 
-	// 1. When vaultRootUri changes or mounts: load from vault if present, or write initial config
+	// 1. Load from vault ONCE per vaultRootUri change
 	useEffect(() => {
 		if (!vaultRootUri || !ready) return;
+		if (lastLoadedVaultUriRef.current === vaultRootUri) return;
+
 		let active = true;
 
-		const loadOrInit = async () => {
+		const loadVaultSettings = async () => {
 			try {
+				lastLoadedVaultUriRef.current = vaultRootUri;
 				const content = fileSystem.readTextFileAsync
 					? await fileSystem.readTextFileAsync(
 							vaultRootUri,
 							VAULT_MOBILE_SETTINGS_PATH,
 						)
 					: fileSystem.readTextFile(vaultRootUri, VAULT_MOBILE_SETTINGS_PATH);
+
 				if (!active) return;
 
 				if (content) {
 					const parsed = parseMobileSettings(content);
-					lastSyncContentRef.current = JSON.stringify(parsed);
-					isSyncingFromVaultRef.current = true;
-					await update(parsed);
-					isSyncingFromVaultRef.current = false;
+					const vaultJson = JSON.stringify(parsed);
+					lastWrittenJsonRef.current = vaultJson;
+					if (JSON.stringify(settings) !== vaultJson) {
+						isUpdatingFromVaultRef.current = true;
+						await update(parsed);
+						isUpdatingFromVaultRef.current = false;
+					}
 				} else {
 					// Initialize .tolaria/mobile.json in vault with current preferences
 					const initialContent = JSON.stringify(settings, null, 2);
@@ -43,25 +51,25 @@ export function useMobileVaultSettingsSync(
 						VAULT_MOBILE_SETTINGS_PATH,
 						initialContent,
 					);
-					lastSyncContentRef.current = JSON.stringify(settings);
+					lastWrittenJsonRef.current = JSON.stringify(settings);
 				}
 			} catch {
-				isSyncingFromVaultRef.current = false;
+				isUpdatingFromVaultRef.current = false;
 			}
 		};
 
-		void loadOrInit();
+		void loadVaultSettings();
 
 		return () => {
 			active = false;
 		};
-	}, [vaultRootUri, ready, update, settings, fileSystem]);
+	}, [vaultRootUri, ready, fileSystem, settings, update]);
 
 	// 2. When settings change: write to .tolaria/mobile.json
 	useEffect(() => {
-		if (!vaultRootUri || !ready || isSyncingFromVaultRef.current) return;
+		if (!vaultRootUri || !ready || isUpdatingFromVaultRef.current) return;
 		const currentJson = JSON.stringify(settings);
-		if (currentJson === lastSyncContentRef.current) return;
+		if (currentJson === lastWrittenJsonRef.current) return;
 
 		try {
 			fileSystem.writeTextFile(
@@ -69,7 +77,7 @@ export function useMobileVaultSettingsSync(
 				VAULT_MOBILE_SETTINGS_PATH,
 				JSON.stringify(settings, null, 2),
 			);
-			lastSyncContentRef.current = currentJson;
+			lastWrittenJsonRef.current = currentJson;
 		} catch {
 			// Ignore
 		}

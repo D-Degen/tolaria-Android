@@ -6,6 +6,7 @@ import type { MobileMetrics } from "../ui/mobileMetrics";
 import { openAndroidTimePicker } from "../ui/nativeDatePicker";
 import type { MobileColors } from "../ui/theme/mobilePalette";
 import { useMobileColors, useMobileStyles } from "../ui/theme/useMobileTheme";
+import { ensureNotificationPermissions } from "../workspace/mobileTaskNotifications";
 import { useMobileSettings } from "./useMobileSettings";
 
 export function MobileTaskNotificationSettings() {
@@ -53,8 +54,11 @@ export function MobileTaskNotificationSettings() {
 					disabled={!preferences.ready || preferences.saving}
 					accessibilityLabel="Benachrichtigungen aktivieren"
 					testID="settings-task-notifications-switch"
-					onCheckedChange={(val) => {
+					onCheckedChange={async (val) => {
 						void preferences.update({ taskNotificationsEnabled: val });
+						if (val) {
+							await ensureNotificationPermissions();
+						}
 					}}
 				/>
 			</View>
