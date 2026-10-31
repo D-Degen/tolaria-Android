@@ -35,6 +35,7 @@ import {
 	MobileToolbarSpacer,
 	MobileToolbarTitle,
 } from "../../ui/MobilePanel";
+import { openAndroidDatePicker } from "../../ui/nativeDatePicker";
 import { useMobileColors } from "../../ui/theme/useMobileTheme";
 import {
 	buildMobileTaskEntries,
@@ -426,9 +427,33 @@ function DueEditor({
 		setInvalid(!onPick(normalized));
 	};
 
+	const handleOpenNativePicker = () => {
+		openAndroidDatePicker({
+			onSelect: (due) => {
+				onPick(due);
+			},
+		});
+	};
+
 	return (
 		<View style={styles.editor} testID="task-due-editor">
 			<View style={styles.editorChips}>
+				<Pressable
+					accessibilityRole="button"
+					style={[
+						styles.quickChip,
+						{
+							backgroundColor: colors.primarySoft,
+							borderColor: colors.primary,
+						},
+					]}
+					testID="task-due-quick-calendar"
+					onPress={handleOpenNativePicker}
+				>
+					<Text style={[styles.quickChipText, { color: colors.primary }]}>
+						📅 Kalender
+					</Text>
+				</Pressable>
 				{quick.map((option) => (
 					<Pressable
 						accessibilityRole="button"

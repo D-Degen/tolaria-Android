@@ -1,6 +1,6 @@
 {
   "name": "@tolaria/mobile",
-  "version": "0.2.11",
+  "version": "0.2.12",
   "private": true,
   "main": "index.ts",
   "scripts": {
@@ -15,6 +15,7 @@
     "@10play/tentap-editor": "^1.0.1",
     "@expo/metro-runtime": "~57.0.17",
     "@floating-ui/dom": "^1.8.0",
+    "@react-native-community/datetimepicker": "9.1.0",
     "@rn-primitives/dropdown-menu": "1.4.0",
     "@rn-primitives/portal": "1.4.0",
     "@rn-primitives/slot": "1.4.0",
