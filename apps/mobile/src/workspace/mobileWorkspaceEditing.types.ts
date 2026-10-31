@@ -31,6 +31,7 @@ export type MobileWorkspaceEdit =
   | { noteId: NoteId; rawContent: MarkdownContent; refresh?: true; type: 'hydrateNoteContent' }
   | { noteId: NoteId; rawContent: TextFileContent; refresh?: true; type: 'hydrateTextFileContent' }
   | { key: FrontmatterKey; noteId: NoteId; value: MobilePropertyValue; type: 'updateProperty' }
+  | { checked?: boolean; due?: string | null; expectedText: string; line: number; noteId: NoteId; type: 'updateChecklistItem' }
   | { key: FrontmatterKey; noteId: NoteId; type: 'deleteProperty' }
   | { key: FrontmatterKey; noteId: NoteId; targetRef?: WikilinkRef; targetTitle: NoteTitle; type: 'addRelationship' }
   | { defaults?: MobileCreateNoteDefaults; key: FrontmatterKey; sourceNoteId: NoteId; targetRef?: WikilinkRef; targetTitle: NoteTitle; type: 'createRelationshipTarget' }

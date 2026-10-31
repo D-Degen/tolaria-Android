@@ -4,6 +4,7 @@ import { View } from "react-native";
 
 import Reanimated from "react-native-reanimated";
 import { MobileNoteListPanel } from "../components/workspace/MobileNoteListPanel";
+import { MobileTaskListPanel } from "../components/workspace/MobileTaskListPanel";
 import { MobilePropertiesPanel } from "../components/workspace/MobilePropertiesPanel";
 import { MobileWorkspaceSidebar } from "../components/workspace/MobileWorkspaceSidebar";
 import { MobilePanelSafeArea } from "../ui/MobilePanelSafeArea";
@@ -174,6 +175,7 @@ function TabletNoteListHost(props: TabletPanelHostProps) {
 	const { styles } = useMobileStyles(createThemeStyles);
 	const { gestures } = props;
 	if (!gestures.renderNoteList) return null;
+	const isTasksView = props.activeItemId === "tasks";
 
 	return (
 		<View
@@ -185,7 +187,20 @@ function TabletNoteListHost(props: TabletPanelHostProps) {
 			style={styles.panelHost}
 		>
 			<MobilePanelSafeArea>
-				<MobileNoteListPanel {...tabletNoteListPanelProps(props)} />
+				{isTasksView && props.onApplyWorkspaceEdit ? (
+					<MobileTaskListPanel
+						compact={props.compactTablet}
+						notes={props.snapshot.allNotes ?? props.snapshot.notes}
+						onApplyEdit={props.onApplyWorkspaceEdit}
+						onOpenSearch={props.onOpenSearch}
+						onSelectNote={(noteId) => {
+							props.onSelectNote(noteId);
+							props.gestures.finishSidebarNavigation();
+						}}
+					/>
+				) : (
+					<MobileNoteListPanel {...tabletNoteListPanelProps(props)} />
+				)}
 			</MobilePanelSafeArea>
 		</View>
 	);
@@ -215,6 +230,7 @@ function tabletNoteListPanelProps(
 		onOpenCreateNote: props.onOpenCreateNote,
 		onOpenSmartCreateNote: props.onOpenSmartCreateNote,
 		onOpenSearch: props.onOpenSearch,
+		onOpenChangeNoteType: props.onOpenChangeNoteTypeForNote,
 		onOpenVault: props.onOpenNativeVault,
 		onToggleNoteFavorite: props.onToggleNoteFavorite,
 		onSelectNote: (noteId) => {

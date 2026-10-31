@@ -1,5 +1,6 @@
 import type { MobileNote, MobileSidebarItem, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
 import { evaluateMobileSavedView, sortMobileNotesBySort } from '../workspace/mobileSavedViews'
+import { isMobileTaskNote } from '../workspace/mobileTasks'
 import {
   isMobileAllNotesEntry,
   isMobileInboxNote,
@@ -160,6 +161,10 @@ export function shouldShowNoteListFilter(selection: TabletSidebarSelection): boo
   return selection.kind === 'folder' || (selection.kind === 'item' && selection.sectionId === 'types')
 }
 
+function isMobileTaskRelevantNote(note: MobileNote) {
+  return !note.archived && isMobileMarkdownNote(note) && (isMobileTaskNote(note) || (note.taskItems?.length ?? 0) > 0)
+}
+
 export function primaryNotesForSelection(
   snapshot: NavigationMetadata,
   notes: MobileNote[],
@@ -171,6 +176,7 @@ export function primaryNotesForSelection(
     return notes.filter((note) => !note.archived && isMobileAllNotesEntry(note, allNotesFileVisibility))
   }
   if (selection.id === 'inbox') return inboxNotes(notes)
+  if (selection.id === 'tasks') return notes.filter(isMobileTaskRelevantNote)
 
   return notes
 }

@@ -12,6 +12,7 @@ import { noteFilename, noteWritePath } from './mobileWorkspacePathRewrites'
 import { normalizeMobileNoteWidth } from './mobileNoteWidth'
 import { mobileWorkspaceTypeTone } from './mobileWorkspaceTypeTone'
 import { parseMobileWikilink } from './mobileWikilinks'
+import { extractChecklistItems } from './mobileTasks'
 
 export type EditableNoteInput = MobileNote & { rawContent: string }
 export type DerivedNote = { note: MobileNote; rawRelationships: Record<string, string[]> }
@@ -54,6 +55,7 @@ export function deriveEditableNote({
       status: frontmatterScalar(document.frontmatter, ['Status', 'status']) ?? '',
       snippet: localVaultSnippet(document.body),
       tags: frontmatterList(document.frontmatter, ['tags', 'Tags']),
+      taskItems: extractChecklistItems(rawContent),
       title: deriveLocalVaultTitle({
         body: document.body,
         fallbackTitle: frontmatterScalar(document.frontmatter, ['title']),

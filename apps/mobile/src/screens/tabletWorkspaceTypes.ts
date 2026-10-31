@@ -13,6 +13,7 @@ import type {
 	MobileTypeSchemaProperty,
 	MobileTypeSchemaRelationship,
 } from "../workspace/mobileTypeDefinitionSchema";
+import type { MobileWorkspaceEdit } from "../workspace/mobileWorkspaceEditing.types";
 import type {
 	MobileEditorBlock,
 	MobileNote,
@@ -57,6 +58,7 @@ export type TabletReadOnlyForm = {
 	folderPath: ReadOnlyFormValue;
 	noteIcon: ReadOnlyFormValue;
 	noteType: ReadOnlyFormValue;
+	targetNoteId: ReadOnlyFormValue;
 	primaryDisplayProperties: string[];
 	primaryItemId: ReadOnlyFormValue;
 	primaryPropertyQuery: ReadOnlyFormValue;
@@ -184,6 +186,8 @@ export type TabletWorkspaceChromeProps = {
 	onMoveViewUp: () => void;
 	onNoteIconChange: (value: ReadOnlyFormValue) => void;
 	onOpenChangeNoteType: () => void;
+	onOpenChangeNoteTypeForNote?: (note: MobileNote) => void;
+	onApplyWorkspaceEdit?: (edit: MobileWorkspaceEdit) => void;
 	onOpenCreateChildFolder: () => void;
 	onOpenCreateNoteInFolder: () => void;
 	onOpenCreateFolder: () => void;

@@ -7,6 +7,7 @@ import { isMobileNoteHydration } from './mobileNoteRead'
 import { applyMobileTextFileContentEdit, canApplyMobileMarkdownEdit, isMobileTextFileContentEdit, mobileTextFileNoteWithContent } from './mobileTextFileEditing'
 import { relationshipKindForKey } from '../../../../src/utils/relationshipKeys'
 import type { FrontmatterKey, NoteTitle, WikilinkRef, WikilinkTarget, MobileNoteEdit, AddRelationshipInput, MobileNoteEditHandler } from './mobileWorkspaceEditing.types'
+import { applyChecklistItemChange } from './mobileTasks'
 import { deriveEditedNote, withEditableContent, writeFrontmatterValue, slugifyTitle } from './mobileWorkspaceNoteContent'
 
 export const mobileNoteEditHandlers = new Map(Object.entries({
@@ -56,6 +57,15 @@ export const mobileNoteEditHandlers = new Map(Object.entries({
   toggleFavorite: ({ editableNote, note, notes, typeDefinitions }, edit) => {
     if (edit.type !== 'toggleFavorite') return editableNote
     return toggleFavorite(editableNote, note, notes, typeDefinitions)
+  },
+  updateChecklistItem: ({ editableNote, typeDefinitions }, edit) => {
+    if (edit.type !== 'updateChecklistItem') return editableNote
+    const nextContent = applyChecklistItemChange(editableNote.rawContent, edit.line, edit.expectedText, {
+      checked: edit.checked,
+      due: edit.due,
+    })
+    if (nextContent === editableNote.rawContent) return editableNote
+    return deriveEditedNote(editableNote, nextContent, typeDefinitions)
   },
   updateNoteContent: ({ editableNote, typeDefinitions }, edit) => {
     if (edit.type !== 'updateNoteContent') return editableNote

@@ -140,6 +140,7 @@ function baseForm(overrides: Partial<TabletReadOnlyForm> = {}): TabletReadOnlyFo
     folderPath: '',
     noteIcon: '',
     noteType: '',
+    targetNoteId: '',
     primaryDisplayProperties: [],
     primaryItemId: '',
     primaryPropertyQuery: '',

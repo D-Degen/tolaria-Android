@@ -138,10 +138,55 @@ it('exits neighborhood when on list screen with neighborhood active', () => {
   expect(goBack).toHaveBeenCalledOnce()
 })
 
-it('returns false on root list screen allowing default system back exit', () => {
+it('navigates back in history when canGoBack is true', () => {
+  const goBack = vi.fn()
   const handled = handlePhoneWorkspaceBackPress({
     phoneState: 'list',
     navigation: { openEditor: vi.fn(), openList: vi.fn() },
+    canGoBack: true,
+    goBack,
+  })
+  expect(handled).toBe(true)
+  expect(goBack).toHaveBeenCalledOnce()
+})
+
+it('navigates to inbox when not in inbox and canGoBack is false', () => {
+  const selectInbox = vi.fn()
+  const handled = handlePhoneWorkspaceBackPress({
+    phoneState: 'list',
+    navigation: { openEditor: vi.fn(), openList: vi.fn() },
+    canGoBack: false,
+    isInbox: false,
+    selectInbox,
+  })
+  expect(handled).toBe(true)
+  expect(selectInbox).toHaveBeenCalledOnce()
+})
+
+it('prompts user and prevents exit on first back press at root inbox', () => {
+  const showExitToast = vi.fn()
+  const onBackPressTimeUpdate = vi.fn()
+  const handled = handlePhoneWorkspaceBackPress({
+    phoneState: 'list',
+    navigation: { openEditor: vi.fn(), openList: vi.fn() },
+    isInbox: true,
+    canGoBack: false,
+    lastBackPressTime: 0,
+    showExitToast,
+    onBackPressTimeUpdate,
+  })
+  expect(handled).toBe(true)
+  expect(showExitToast).toHaveBeenCalledOnce()
+  expect(onBackPressTimeUpdate).toHaveBeenCalledWith(expect.any(Number))
+})
+
+it('returns false on second back press within 2000ms at root inbox allowing system exit', () => {
+  const handled = handlePhoneWorkspaceBackPress({
+    phoneState: 'list',
+    navigation: { openEditor: vi.fn(), openList: vi.fn() },
+    isInbox: true,
+    canGoBack: false,
+    lastBackPressTime: Date.now() - 500,
   })
   expect(handled).toBe(false)
 })

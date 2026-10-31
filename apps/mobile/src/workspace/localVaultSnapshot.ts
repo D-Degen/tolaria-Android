@@ -20,6 +20,7 @@ import {
 } from './mobileSavedViews'
 import { buildMobileSidebarSections } from './mobileSidebarSections'
 import { isMobileInboxNote } from './mobileNoteFilters'
+import { extractChecklistItems } from './mobileTasks'
 import { normalizeMobileNoteWidth } from './mobileNoteWidth'
 import { normalizeMobileWikilinkTarget } from './mobileWikilinks'
 import { mobileWorkspaceAlias } from './mobileWorkspaceAlias'
@@ -407,6 +408,7 @@ function localEntryToMobileNote(
     snippet: localVaultSnippet(entry.body),
     status: entry.status,
     tags: entry.tags,
+    taskItems: entry.fileKind === 'text' || entry.fileKind === 'binary' ? undefined : extractChecklistItems(entry.rawContent),
     title: entry.title,
     type: entry.type,
     typeTone: entry.typeTone,

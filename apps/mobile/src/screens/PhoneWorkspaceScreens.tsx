@@ -1,6 +1,7 @@
 import { Fragment, useCallback } from 'react'
 import { Pressable, View } from 'react-native'
 import { MobileNoteListPanel } from '../components/workspace/MobileNoteListPanel'
+import { MobileTaskListPanel } from '../components/workspace/MobileTaskListPanel'
 import { MobilePropertiesPanel } from '../components/workspace/MobilePropertiesPanel'
 import { MobileWorkspaceSidebar } from '../components/workspace/MobileWorkspaceSidebar'
 import { mobileText } from '../i18n/mobileText'
@@ -26,36 +27,50 @@ function PhoneNoteListScreen({
   phoneLayoutProbe,
 }: PhoneWorkspaceStateViewProps) {
   const { styles } = useMobileStyles(createThemeStyles)
+  const isTasksView = controller.activeItemId === 'tasks'
 
   return (
     <View {...probeProps(phoneLayoutProbe, 'phone.list.screen')} style={styles.screen} testID="phone-note-list-screen">
-      <MobileNoteListPanel
-        compact
-        leading={<PhoneSidebarButton onOpenSidebar={openSidebar} />}
-        onToggleNoteFavorite={controller.onToggleNoteFavorite}
-        bulkActions={phoneNoteListBulkActions(controller)}
-        displayPropertyKeys={controller.noteListProperties}
-        emptyVault={mobileWorkspaceHasNoVault(controller.snapshot)}
-        fullWidth
-        layoutProbe={options.layoutProbe}
-        neighborhood={controller.noteListNeighborhood}
-        noteListFilter={controller.noteListFilter}
-        noteListFilterCounts={controller.noteListFilterCounts}
-        noteListFilterVisible={controller.noteListFilterVisible}
-        notes={controller.notes}
-        propertyDisplayModes={controller.snapshot.vaultConfig?.propertyDisplayModes}
-        searchQuery={controller.searchQuery || undefined}
-        selectedNoteId={controller.selectedNoteId}
-        subtitle={controller.noteListSubtitle}
-        title={controller.noteListTitle}
-        typeDefinitions={controller.snapshot.typeDefinitions}
-        onOpenCreateNote={controller.onOpenCreateNote}
-        onOpenSmartCreateNote={controller.onOpenSmartCreateNote}
-        onOpenSearch={controller.onOpenSearch}
-        onOpenVault={controller.onOpenCreateNote}
-        onNoteListFilterChange={controller.onNoteListFilterChange}
-        onSelectNote={openEditor}
-      />
+      {isTasksView && controller.onApplyWorkspaceEdit ? (
+        <MobileTaskListPanel
+          compact
+          fullWidth
+          leading={<PhoneSidebarButton onOpenSidebar={openSidebar} />}
+          notes={controller.snapshot.allNotes ?? controller.snapshot.notes}
+          onApplyEdit={controller.onApplyWorkspaceEdit}
+          onOpenSearch={controller.onOpenSearch}
+          onSelectNote={openEditor}
+        />
+      ) : (
+        <MobileNoteListPanel
+          compact
+          leading={<PhoneSidebarButton onOpenSidebar={openSidebar} />}
+          onToggleNoteFavorite={controller.onToggleNoteFavorite}
+          bulkActions={phoneNoteListBulkActions(controller)}
+          displayPropertyKeys={controller.noteListProperties}
+          emptyVault={mobileWorkspaceHasNoVault(controller.snapshot)}
+          fullWidth
+          layoutProbe={options.layoutProbe}
+          neighborhood={controller.noteListNeighborhood}
+          noteListFilter={controller.noteListFilter}
+          noteListFilterCounts={controller.noteListFilterCounts}
+          noteListFilterVisible={controller.noteListFilterVisible}
+          notes={controller.notes}
+          propertyDisplayModes={controller.snapshot.vaultConfig?.propertyDisplayModes}
+          searchQuery={controller.searchQuery || undefined}
+          selectedNoteId={controller.selectedNoteId}
+          subtitle={controller.noteListSubtitle}
+          title={controller.noteListTitle}
+          typeDefinitions={controller.snapshot.typeDefinitions}
+          onOpenCreateNote={controller.onOpenCreateNote}
+          onOpenSmartCreateNote={controller.onOpenSmartCreateNote}
+          onOpenSearch={controller.onOpenSearch}
+          onOpenVault={controller.onOpenCreateNote}
+          onOpenChangeNoteType={controller.onOpenChangeNoteTypeForNote}
+          onNoteListFilterChange={controller.onNoteListFilterChange}
+          onSelectNote={openEditor}
+        />
+      )}
     </View>
   )
 }

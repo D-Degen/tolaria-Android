@@ -18,6 +18,7 @@ import { collectAvailableNoteTypes } from "./MobileWorkspaceTypePickerModel";
 export type MobileWorkspaceTypePickerProps = {
 	notes: MobileNote[];
 	selectedNote: MobileNote | null;
+	targetNoteId?: string;
 	typeDefinitions?: MobileTypeDefinitions;
 	onChangeNoteType: (typeOverride?: string) => void;
 	onChangeNoteTypeInputChange: (value: string) => void;
@@ -27,6 +28,7 @@ export type MobileWorkspaceTypePickerProps = {
 export function MobileWorkspaceTypePicker({
 	notes,
 	selectedNote,
+	targetNoteId,
 	typeDefinitions,
 	onChangeNoteType,
 	onChangeNoteTypeInputChange,
@@ -37,7 +39,8 @@ export function MobileWorkspaceTypePicker({
 		() => collectAvailableNoteTypes(typeDefinitions, notes),
 		[typeDefinitions, notes],
 	);
-	const currentType = selectedNote?.type?.trim().toLowerCase();
+	const activeNote = (targetNoteId ? notes.find((n) => n.id === targetNoteId) : null) ?? selectedNote;
+	const currentType = activeNote?.type?.trim().toLowerCase();
 
 	return (
 		<ScrollView

@@ -65,6 +65,7 @@ export const mobileNoteEditTypes = new Set<MobileWorkspaceEdit['type']>([
   'setArchived',
   'setOrganized',
   'toggleFavorite',
+  'updateChecklistItem',
   'updateNoteContent',
   'updateProperty',
   'updateTextFileContent',

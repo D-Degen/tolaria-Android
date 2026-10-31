@@ -125,16 +125,19 @@ function PhoneWorkspaceChrome(props: PhoneWorkspaceChromeProps) {
   })
   useMobileEditorOverlayFocus(phoneState !== 'editor' || Boolean(controller.openAction) || commandPalette.visible, editorCommandRegistry.commands)
   usePhoneWorkspaceBackHandler({
+    canGoBack: controller.canGoBack,
     clearSearch: () => controller.onSearchQueryChange(''),
     closeAction: controller.onCloseAction,
     closeCommandPalette: commandPalette.close,
     commandPaletteVisible: commandPalette.visible,
     goBack: controller.goBack,
+    isInbox: controller.sidebarSelection.id === 'inbox',
     navigation,
     neighborhood: controller.noteListNeighborhood,
     openAction: controller.openAction,
     phoneState,
     searchQuery: controller.searchQuery,
+    selectInbox: () => controller.selectDefaultSidebarItem(),
   })
   useMobileWorkspaceKeyboardShortcuts({
     nativeNoteNavigationEnabled: phoneState === 'list' && !commandPalette.visible && !controller.openAction,

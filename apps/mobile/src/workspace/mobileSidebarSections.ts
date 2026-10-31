@@ -8,6 +8,7 @@ import {
 } from './mobileNoteFilters'
 import { mobileSidebarIconFromValue, mobileToneFromValue } from './mobileWorkspaceMetadata'
 import { buildMobileFolderTree } from './mobileWorkspaceFolders'
+import { buildMobileTaskEntries, mobileTaskOpenCount } from './mobileTasks'
 import type {
   MobileAllNotesFileVisibility,
   MobileNote,
@@ -86,11 +87,13 @@ function primarySection(
   const inboxNotes = notes.filter(isMobileInboxNote)
   const allNotes = notes.filter((note) => !note.archived && isMobileAllNotesEntry(note, allNotesFileVisibility))
   const archivedNotes = notes.filter((note) => note.archived && isMobileMarkdownNote(note))
+  const taskCount = mobileTaskOpenCount(buildMobileTaskEntries(notes))
 
   return {
     id: 'primary',
     items: [
       { active: true, count: countText(inboxNotes.length), icon: 'inbox', id: 'inbox', label: 'Inbox' },
+      { count: countText(taskCount), icon: 'check-square', id: 'tasks', label: 'Aufgaben' },
       { count: countText(allNotes.length), icon: 'file', id: 'all-notes', label: 'All Notes' },
       { count: countText(archivedNotes.length), icon: 'archive', id: 'archive', label: 'Archive' },
     ],

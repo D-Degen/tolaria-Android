@@ -293,6 +293,14 @@ export const mobileEditingParityInventory = {
     ],
     surface: ['editor', 'sidebar', 'native-repository'],
   }),
+  updateChecklistItem: entry({
+    desktopParity: 'Checkbox lines (`- [ ]` / `- [x]`) and their `📅 YYYY-MM-DD` due marker are edited in place without touching other note content.',
+    evidence: [
+      'mobileTasks unit tests',
+      'mobileWorkspaceEditing checklist reducer tests',
+    ],
+    surface: ['note-list', 'native-repository'],
+  }),
   updateNoteContent: entry({
     desktopParity: 'Markdown edits save desktop-compatible frontmatter/body content from source and WYSIWYG editors.',
     evidence: [

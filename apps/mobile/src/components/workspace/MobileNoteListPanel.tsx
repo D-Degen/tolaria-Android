@@ -70,6 +70,7 @@ type MobileNoteListPanelProps = {
   onOpenSearch: () => void
   onOpenVault?: () => void
   onNoteListFilterChange?: (filter: MobileNoteListFilter) => void
+  onOpenChangeNoteType?: (note: MobileNote) => void
   onSelectNote: (noteId: string) => void
   onToggleNoteFavorite?: (noteId: string) => void
   propertyDisplayModes?: Record<string, MobilePropertyDisplayMode> | null
@@ -160,6 +161,7 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
           layoutProbe={layoutProbe.probe}
           neighborhood={neighborhood}
           notes={notes}
+          onOpenChangeNoteType={props.onOpenChangeNoteType}
           onSelectNote={onSelectNote}
           onOpenVault={onOpenVault}
           propertyDisplayModes={propertyDisplayModes}
@@ -244,6 +246,7 @@ type NoteListContentProps = {
   layoutProbe: MobileLayoutProbe
   neighborhood: MobileNeighborhood | null
   notes: MobileNote[]
+  onOpenChangeNoteType?: (note: MobileNote) => void
   onOpenVault?: () => void
   onSelectNote: (noteId: string) => void
   propertyDisplayModes?: Record<string, MobilePropertyDisplayMode> | null
@@ -279,6 +282,7 @@ function NoteListContent(props: NoteListContentProps) {
         displayPropertyKeys={displayPropertyKeys}
         layoutProbe={layoutProbe}
         neighborhood={neighborhood}
+        onOpenChangeNoteType={props.onOpenChangeNoteType}
         refreshControl={refreshControl}
         propertyDisplayModes={propertyDisplayModes}
         typeDefinitions={typeDefinitions}
@@ -313,6 +317,7 @@ function NoteListContent(props: NoteListContentProps) {
             multiSelected: bulkSelection.selectedNoteIds.has(note.id),
             note,
             onBeginSelection: bulkSelection.beginSelection,
+            onOpenChangeNoteType: props.onOpenChangeNoteType,
             propertyDisplayModes,
             typeDefinitions,
             onSelectNote: bulkSelection.pressNote,
@@ -353,6 +358,7 @@ function NeighborhoodNoteList({
   displayPropertyKeys,
   layoutProbe,
   neighborhood,
+  onOpenChangeNoteType,
   refreshControl,
   onSelectNote,
   propertyDisplayModes,
@@ -363,6 +369,7 @@ function NeighborhoodNoteList({
   displayPropertyKeys: string[]
   layoutProbe: MobileLayoutProbe
   neighborhood: MobileNeighborhood
+  onOpenChangeNoteType?: (note: MobileNote) => void
   refreshControl?: ReactElement<RefreshControlProps>
   onSelectNote: (noteId: string) => void
   propertyDisplayModes?: Record<string, MobilePropertyDisplayMode> | null
@@ -386,6 +393,7 @@ function NeighborhoodNoteList({
           displayPropertyKeys,
           item,
           layoutProbe,
+          onOpenChangeNoteType,
           propertyDisplayModes,
           typeDefinitions,
           onSelectNote,
@@ -404,6 +412,7 @@ function neighborhoodRow({
   displayPropertyKeys,
   item,
   layoutProbe,
+  onOpenChangeNoteType,
   onSelectNote,
   propertyDisplayModes,
   typeDefinitions,
@@ -413,6 +422,7 @@ function neighborhoodRow({
   displayPropertyKeys: string[]
   item: MobileNeighborhoodRow
   layoutProbe: MobileLayoutProbe
+  onOpenChangeNoteType?: (note: MobileNote) => void
   onSelectNote: (noteId: string) => void
   propertyDisplayModes?: Record<string, MobilePropertyDisplayMode> | null
   typeDefinitions?: MobileTypeDefinitions
@@ -428,6 +438,7 @@ function neighborhoodRow({
         forceSelected: item.kind === 'source',
         layoutProbe,
         note: item.note,
+        onOpenChangeNoteType,
         propertyDisplayModes,
         typeDefinitions,
         onSelectNote,

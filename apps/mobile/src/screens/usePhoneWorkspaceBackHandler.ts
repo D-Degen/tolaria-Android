@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef } from 'react'
-import { BackHandler, Platform } from 'react-native'
+import { BackHandler, Platform, ToastAndroid } from 'react-native'
 import type { PhoneWorkspaceNavigation } from './PhoneWorkspace'
 import type { PhoneWorkspaceState } from './phoneWorkspaceTransitions'
 
@@ -15,7 +15,13 @@ export type PhoneWorkspaceBackHandlerOptions = {
   searchQuery?: string
   clearSearch?: () => void
   neighborhood?: unknown
+  canGoBack?: boolean
   goBack?: () => void
+  isInbox?: boolean
+  selectInbox?: () => void
+  lastBackPressTime?: number
+  onBackPressTimeUpdate?: (time: number) => void
+  showExitToast?: () => void
 }
 
 export function handlePhoneWorkspaceBackPress(options: PhoneWorkspaceBackHandlerOptions): boolean {
@@ -52,13 +58,30 @@ export function handlePhoneWorkspaceBackPress(options: PhoneWorkspaceBackHandler
       options.goBack()
       return true
     }
-    return false
+    if (options.canGoBack && options.goBack) {
+      options.goBack()
+      return true
+    }
+    if (options.isInbox === false && options.selectInbox) {
+      options.selectInbox()
+      return true
+    }
+    const now = Date.now()
+    const lastTime = options.lastBackPressTime ?? 0
+    if (now - lastTime < 2000) {
+      return false
+    }
+    options.onBackPressTimeUpdate?.(now)
+    options.showExitToast?.()
+    return true
   }
   return false
 }
 
 export function usePhoneWorkspaceBackHandler(options: PhoneWorkspaceBackHandlerOptions) {
   const latest = useRef(options)
+  const lastBackPressTimeRef = useRef(0)
+
   useLayoutEffect(() => {
     latest.current = options
   })
@@ -67,7 +90,22 @@ export function usePhoneWorkspaceBackHandler(options: PhoneWorkspaceBackHandlerO
     if (Platform.OS !== 'android') return
 
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      return handlePhoneWorkspaceBackPress(latest.current)
+      const opts: PhoneWorkspaceBackHandlerOptions = {
+        ...latest.current,
+        lastBackPressTime: lastBackPressTimeRef.current,
+        onBackPressTimeUpdate: (time: number) => {
+          lastBackPressTimeRef.current = time
+          latest.current.onBackPressTimeUpdate?.(time)
+        },
+        showExitToast: () => {
+          if (latest.current.showExitToast) {
+            latest.current.showExitToast()
+          } else if (Platform.OS === 'android' && ToastAndroid?.show) {
+            ToastAndroid.show('Erneut drücken zum Beenden', ToastAndroid.SHORT)
+          }
+        },
+      }
+      return handlePhoneWorkspaceBackPress(opts)
     })
     return () => {
       subscription.remove()

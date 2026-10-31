@@ -54,7 +54,13 @@ export function useTabletWorkspaceController(request: TabletWorkspaceControllerR
   const { defaultNoteWidth, selectedNote } = resolvedControllerNote(workspaceSnapshot, navigation.selectedNote)
   const applyEdit = useControllerApplyEdit({ applyWorkspaceEdit, navigation, setSelectedNoteId: navigation.setSelectedNoteId })
   const closeAction = useCloseWorkspaceAction({ resetForm, setOpenAction })
-  const saveSelectedEdit = useSaveSelectedEdit({ applyEdit, closeAction, selectedNote })
+  const saveSelectedEdit = useSaveSelectedEdit({ applyEdit, closeAction, readOnlyForm, selectedNote })
+  const onOpenChangeNoteTypeForNote = useCallback((note: MobileNote) => {
+    navigation.setSelectedNoteId(note.id)
+    updateReadOnlyForm('noteType', note.type ?? '')
+    updateReadOnlyForm('targetNoteId', note.id)
+    setOpenAction('changeNoteType')
+  }, [navigation, setOpenAction, updateReadOnlyForm])
   const workspaceActionsContext = {
     applyEdit,
     closeAction,
@@ -84,6 +90,8 @@ export function useTabletWorkspaceController(request: TabletWorkspaceControllerR
     ...fieldActions,
     ...selectedFolderActions,
     ...selectedViewActions,
+    onApplyWorkspaceEdit: applyEdit,
+    onOpenChangeNoteTypeForNote,
     ...controllerPresentation({ context: workspaceActionsContext, pipeline, defaultNoteWidth, selectedNoteRead, searchQuery, setSearchQuery, openActionSheetQaTarget }),
   }
 }
@@ -219,19 +227,22 @@ function useCloseWorkspaceAction({
 function useSaveSelectedEdit({
   applyEdit,
   closeAction,
+  readOnlyForm,
   selectedNote,
 }: {
   applyEdit: ApplyWorkspaceEdit
   closeAction: () => void
+  readOnlyForm: TabletReadOnlyForm
   selectedNote: MobileNote | null
 }) {
   return useCallback((toEdit: (noteId: string) => MobileWorkspaceEdit | null) => {
-    if (!selectedNote) return
-    const edit = toEdit(selectedNote.id)
+    const targetId = readOnlyForm.targetNoteId || selectedNote?.id
+    if (!targetId) return
+    const edit = toEdit(targetId)
     if (!edit) return
     applyEdit(edit)
     closeAction()
-  }, [applyEdit, closeAction, selectedNote])
+  }, [applyEdit, closeAction, readOnlyForm.targetNoteId, selectedNote])
 }
 
 function useReadOnlyFormState() {

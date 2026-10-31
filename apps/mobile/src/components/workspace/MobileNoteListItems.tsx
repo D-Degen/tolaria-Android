@@ -1,5 +1,5 @@
 import { FolderOpen, MagnifyingGlass } from 'phosphor-react-native'
-import { View } from 'react-native'
+import { Pressable, View } from 'react-native'
 import { mobileText } from '../../i18n/mobileText'
 import type { MobileLayoutProbe } from '../../qa/mobileLayoutProbe'
 import { MobileButton } from '../../ui/MobileButton'
@@ -31,6 +31,7 @@ export type MobileNoteListRowProps = {
   multiSelected?: boolean
   note: MobileNote
   onBeginSelection?: (noteId: string) => void
+  onOpenChangeNoteType?: (note: MobileNote) => void
   onSelectNote: (noteId: string) => void
   propertyDisplayModes?: Record<string, MobilePropertyDisplayMode> | null
   typeDefinitions?: MobileTypeDefinitions
@@ -46,6 +47,7 @@ export function MobileNoteListRow(props: MobileNoteListRowProps) {
     multiSelected = false,
     note,
     onBeginSelection,
+    onOpenChangeNoteType,
     onSelectNote,
     propertyDisplayModes,
     typeDefinitions,
@@ -71,13 +73,34 @@ export function MobileNoteListRow(props: MobileNoteListRowProps) {
         testID={`note-row-${note.id}`}
         title={note.title}
         trailing={
-          <MobileTypeIcon
-            fileKind={note.fileKind}
-            size={16}
-            tone={note.typeTone}
-            type={note.type}
-            typeDefinitions={typeDefinitions}
-          />
+          onOpenChangeNoteType ? (
+            <Pressable
+              accessibilityLabel={`Typ ändern: ${note.type}`}
+              accessibilityRole="button"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              testID={`note-row-type-badge-${note.id}`}
+              onPress={(e) => {
+                e?.stopPropagation?.()
+                onOpenChangeNoteType(note)
+              }}
+            >
+              <MobileTypeIcon
+                fileKind={note.fileKind}
+                size={16}
+                tone={note.typeTone}
+                type={note.type}
+                typeDefinitions={typeDefinitions}
+              />
+            </Pressable>
+          ) : (
+            <MobileTypeIcon
+              fileKind={note.fileKind}
+              size={16}
+              tone={note.typeTone}
+              type={note.type}
+              typeDefinitions={typeDefinitions}
+            />
+          )
         }
         onLongPress={onBeginSelection ? () => onBeginSelection(note.id) : undefined}
         onPress={() => onSelectNote(note.id)}

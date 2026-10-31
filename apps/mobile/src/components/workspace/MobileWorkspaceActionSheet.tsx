@@ -173,6 +173,7 @@ const actionContentByAction: Record<
 			onChangeNoteTypeInputChange={props.onChangeNoteTypeInputChange}
 			onClose={props.onClose}
 			selectedNote={props.selectedNote}
+			targetNoteId={props.targetNoteId}
 			typeDefinitions={props.typeDefinitions}
 		/>
 	),

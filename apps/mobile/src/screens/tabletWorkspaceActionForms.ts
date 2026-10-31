@@ -20,6 +20,7 @@ export const emptyReadOnlyForm: TabletReadOnlyForm = {
   folderPath: '',
   noteIcon: '',
   noteType: '',
+  targetNoteId: '',
   primaryDisplayProperties: [],
   primaryItemId: '',
   primaryPropertyQuery: '',

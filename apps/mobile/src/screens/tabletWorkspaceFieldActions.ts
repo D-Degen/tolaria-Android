@@ -176,7 +176,7 @@ export function retargetWorkspaceActions({
 					typeOverride !== undefined
 						? { ...readOnlyForm, noteType: typeOverride }
 						: readOnlyForm,
-					noteId,
+					readOnlyForm.targetNoteId || noteId,
 				),
 			),
 		onChangeNoteTypeInputChange: (value: TabletReadOnlyForm["noteType"]) =>

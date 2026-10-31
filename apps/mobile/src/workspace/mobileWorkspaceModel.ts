@@ -10,6 +10,13 @@ export type MobileTone = 'blue' | 'gray' | 'green' | 'orange' | 'purple' | 'red'
 export type MobileNoteWidth = 'normal' | 'wide'
 export type MobileFileKind = 'binary' | 'markdown' | 'text'
 
+export type MobileNoteChecklistItem = {
+  checked: boolean
+  due: string | null
+  line: number
+  text: string
+}
+
 export type MobileNote = {
   aliases?: string[]
   archived?: boolean
@@ -36,6 +43,7 @@ export type MobileNote = {
   status: string
   snippet: string
   tags: string[]
+  taskItems?: MobileNoteChecklistItem[]
   title: string
   type: string
   typeTone: MobileTone

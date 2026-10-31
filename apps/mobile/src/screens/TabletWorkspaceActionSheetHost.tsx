@@ -86,6 +86,7 @@ function actionSheetFormValues(readOnlyForm: ActionSheetHostProps['readOnlyForm'
     folderPath: readOnlyForm.folderPath,
     noteIcon: readOnlyForm.noteIcon,
     noteType: readOnlyForm.noteType,
+    targetNoteId: readOnlyForm.targetNoteId,
     primaryDisplayProperties: readOnlyForm.primaryDisplayProperties,
     primaryItemId: readOnlyForm.primaryItemId,
     primaryPropertyQuery: readOnlyForm.primaryPropertyQuery,

@@ -65,6 +65,7 @@ export type MobileWorkspaceActionSheetProps = {
 	notes: MobileNote[];
 	noteIcon: string;
 	noteType: string;
+	targetNoteId?: string;
 	primaryDisplayProperties: string[];
 	primaryItemId: string;
 	primaryPropertyOptions: string[];
