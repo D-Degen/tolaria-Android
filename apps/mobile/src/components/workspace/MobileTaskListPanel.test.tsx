@@ -10,7 +10,9 @@ import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("phosphor-react-native", () => ({
+	Alarm: () => null,
 	CalendarBlank: () => null,
+	CalendarStar: () => null,
 	CheckSquare: () => null,
 	MagnifyingGlass: () => null,
 	Square: () => null,

@@ -1,5 +1,6 @@
 import {
-	CalendarBlank,
+	Alarm,
+	CalendarStar,
 	CheckSquare,
 	MagnifyingGlass,
 	Square,
@@ -362,7 +363,7 @@ function TaskRow({
 					testID={`task-due-${entry.id}`}
 					onPress={onToggleEditor}
 				>
-					<CalendarBlank
+					<CalendarStar
 						color={overdue ? colors.textInverse : colors.primary}
 						size={14}
 					/>
@@ -372,10 +373,34 @@ function TaskRow({
 							{ color: overdue ? colors.textInverse : colors.primary },
 						]}
 					>
-						{entry.due
-							? `${formatDue(entry.due, today)}${entry.time ? ` ⏰ ${entry.time}` : ""}${entry.inheritedDue ? ` (${mobileTaskListLabels.inheritedDue})` : ""}`
-							: "—"}
+						{entry.due ? formatDue(entry.due, today) : "—"}
 					</Text>
+					{entry.due && entry.time ? (
+						<>
+							<Alarm
+								color={overdue ? colors.textInverse : colors.primary}
+								size={12}
+							/>
+							<Text
+								style={[
+									styles.dueText,
+									{ color: overdue ? colors.textInverse : colors.primary },
+								]}
+							>
+								{entry.time}
+							</Text>
+						</>
+					) : null}
+					{entry.due && entry.inheritedDue ? (
+						<Text
+							style={[
+								styles.dueText,
+								{ color: overdue ? colors.textInverse : colors.primary },
+							]}
+						>
+							{` (${mobileTaskListLabels.inheritedDue})`}
+						</Text>
+					) : null}
 				</Pressable>
 			</View>
 			{editing ? (
@@ -450,13 +475,17 @@ function DueEditor({
 						{
 							backgroundColor: colors.primarySoft,
 							borderColor: colors.primary,
+							flexDirection: "row",
+							alignItems: "center",
+							gap: 4,
 						},
 					]}
 					testID="task-due-quick-calendar"
 					onPress={handleOpenNativePicker}
 				>
+					<CalendarStar color={colors.primary} size={14} />
 					<Text style={[styles.quickChipText, { color: colors.primary }]}>
-						📅 Kalender
+						Kalender & Zeit
 					</Text>
 				</Pressable>
 				{quick.map((option) => (

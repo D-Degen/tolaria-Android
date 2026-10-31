@@ -1,5 +1,5 @@
 import type { EditorBridge } from "@10play/tentap-editor";
-import { CalendarBlank, Check, X } from "phosphor-react-native";
+import { CalendarStar, Check, X } from "phosphor-react-native";
 import { useCallback, useMemo, useState } from "react";
 import {
 	Modal,
@@ -87,7 +87,7 @@ export function MobileTaskDueToolbarAffordance({
 			testID="task-due-affordance-bar"
 		>
 			<View style={styles.leading}>
-				<CalendarBlank color={colors.primary} size={15} />
+				<CalendarStar color={colors.primary} size={15} />
 				<Text style={[styles.label, { color: colors.textMuted }]}>
 					Fälligkeit:
 				</Text>
@@ -121,11 +121,18 @@ export function MobileTaskDueToolbarAffordance({
 					accessibilityRole="button"
 					style={[
 						styles.chip,
-						{ backgroundColor: colors.graySoft, borderColor: colors.border },
+						{
+							backgroundColor: colors.graySoft,
+							borderColor: colors.border,
+							flexDirection: "row",
+							alignItems: "center",
+							gap: 4,
+						},
 					]}
 					testID="task-due-chip-custom"
 					onPress={handleOpenCustomPicker}
 				>
+					<CalendarStar color={colors.text} size={13} />
 					<Text style={[styles.chipText, { color: colors.text }]}>
 						Datum...
 					</Text>
@@ -152,7 +159,7 @@ export function MobileTaskDueToolbarAffordance({
 						>
 							<View style={styles.modalHeader}>
 								<View style={styles.modalTitleRow}>
-									<CalendarBlank color={colors.primary} size={18} />
+									<CalendarStar color={colors.primary} size={18} />
 									<Text style={[styles.modalTitle, { color: colors.text }]}>
 										Fälligkeitsdatum wählen
 									</Text>

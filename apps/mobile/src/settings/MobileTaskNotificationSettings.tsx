@@ -1,3 +1,4 @@
+import { Alarm } from "phosphor-react-native";
 import { useState } from "react";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
 import { Switch } from "../components/ui/switch";
@@ -115,6 +116,9 @@ export function MobileTaskNotificationSettings() {
 								{
 									backgroundColor: colors.primarySoft,
 									borderColor: colors.primary,
+									flexDirection: "row",
+									alignItems: "center",
+									gap: 6,
 									paddingHorizontal: 10,
 									paddingVertical: 6,
 								},
@@ -131,8 +135,9 @@ export function MobileTaskNotificationSettings() {
 								});
 							}}
 						>
+							<Alarm color={colors.primary} size={15} />
 							<Text style={[styles.quickChipText, { color: colors.primary }]}>
-								⏰ Android-Uhr aufrufen
+								Android-Uhr aufrufen
 							</Text>
 						</Pressable>
 						<TextInput

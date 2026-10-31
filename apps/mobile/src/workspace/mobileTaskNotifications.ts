@@ -90,6 +90,7 @@ export function calculateTaskNotificationTimestamp(
 export type TaskNotificationPayload = {
 	body: string;
 	identifier: string;
+	noteId: string;
 	title: string;
 	triggerTimestamp: number;
 };
@@ -113,6 +114,7 @@ export function buildTaskNotificationPayload(
 			? `In Notiz: ${entry.subtitle}`
 			: "Fällige Aufgabe in Tolaria",
 		identifier: `tolaria:task:${entry.id}`,
+		noteId: entry.noteId,
 		title: cleanTitle || entry.title,
 		triggerTimestamp,
 	};
@@ -149,6 +151,10 @@ export const defaultNotificationScheduler: NotificationScheduler = {
 			await Notifications.scheduleNotificationAsync({
 				content: {
 					body: payload.body,
+					data: {
+						noteId: payload.noteId,
+						url: `tolaria://open?noteId=${encodeURIComponent(payload.noteId)}&phoneState=editor`,
+					},
 					sound: "default",
 					title: payload.title,
 				},
