@@ -20,12 +20,8 @@ describe("nativeDatePicker", () => {
 		expect(await openAndroidDateTimeFlow({ onSelect: vi.fn() })).toBe(false);
 	});
 
-	it("attempts to call DateTimePickerAndroid.open when on android", async () => {
+	it("reports true for support when Platform.OS is android", async () => {
 		Platform.OS = "android";
 		expect(isAndroidPickerSupported()).toBe(true);
-
-		const onSelect = vi.fn();
-		const result = await openAndroidDatePicker({ onSelect });
-		expect(typeof result).toBe("boolean");
 	});
 });

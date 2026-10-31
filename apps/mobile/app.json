@@ -3,7 +3,7 @@
     "name": "Tolaria",
     "slug": "tolaria-mobile",
     "scheme": "tolaria",
-    "version": "0.2.15",
+    "version": "0.2.16",
     "icon": "./assets/icon-round.png",
     "orientation": "default",
     "userInterfaceStyle": "automatic",
@@ -21,12 +21,13 @@
     },
     "android": {
       "package": "com.tolaria.mobile.dev",
-      "versionCode": 16,
+      "versionCode": 17,
       "softwareKeyboardLayoutMode": "resize",
       "permissions": [
         "INTERNET",
         "POST_NOTIFICATIONS",
         "RECEIVE_BOOT_COMPLETED",
+        "RECORD_AUDIO",
         "SCHEDULE_EXACT_ALARM",
         "USE_EXACT_ALARM",
         "VIBRATE"

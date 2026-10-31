@@ -1,8 +1,16 @@
 package md.tolaria.smartnotes
 
+import android.Manifest
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
+import androidx.core.content.ContextCompat
 import expo.modules.kotlin.Promise
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
@@ -12,22 +20,41 @@ class TolariaSmartNotesModule : Module() {
   private val speechRequestCode = 48192
   @Volatile
   private var pendingSpeechPromise: Promise? = null
+  private var activeSpeechRecognizer: SpeechRecognizer? = null
+  private val mainHandler = Handler(Looper.getMainLooper())
+  private val speechTimeoutRunnable = Runnable { finishSpeech(null) }
+
+  private fun finishSpeech(result: String?) {
+    mainHandler.post {
+      mainHandler.removeCallbacks(speechTimeoutRunnable)
+      try {
+        activeSpeechRecognizer?.stopListening()
+        activeSpeechRecognizer?.cancel()
+        activeSpeechRecognizer?.destroy()
+      } catch (_: Throwable) {}
+      activeSpeechRecognizer = null
+
+      val p = pendingSpeechPromise
+      pendingSpeechPromise = null
+      p?.resolve(result)
+    }
+  }
 
   override fun definition() = ModuleDefinition {
     Name("TolariaSmartNotes")
 
+    OnDestroy {
+      finishSpeech(null)
+    }
+
     OnActivityResult { _, payload ->
       if (payload.requestCode == speechRequestCode) {
-        val promise = pendingSpeechPromise
-        pendingSpeechPromise = null
-        if (promise != null) {
-          if (payload.resultCode == Activity.RESULT_OK && payload.data != null) {
-            val matches = payload.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-            val spoken = matches?.firstOrNull()?.trim()
-            promise.resolve(if (!spoken.isNullOrEmpty()) spoken else null)
-          } else {
-            promise.resolve(null)
-          }
+        if (payload.resultCode == Activity.RESULT_OK && payload.data != null) {
+          val matches = payload.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+          val spoken = matches?.firstOrNull()?.trim()
+          finishSpeech(if (!spoken.isNullOrEmpty()) spoken else null)
+        } else {
+          finishSpeech(null)
         }
       }
     }
@@ -111,18 +138,62 @@ class TolariaSmartNotesModule : Module() {
         promise.resolve(null)
         return@AsyncFunction
       }
-      pendingSpeechPromise?.resolve(null)
+
+      finishSpeech(null)
       pendingSpeechPromise = promise
-      try {
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-          putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-          putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-          putExtra(RecognizerIntent.EXTRA_PROMPT, "KI-Sprachnotiz diktieren...")
+
+      mainHandler.post {
+        try {
+          val hasAudioPermission = ContextCompat.checkSelfPermission(
+            activity,
+            Manifest.permission.RECORD_AUDIO
+          ) == PackageManager.PERMISSION_GRANTED
+
+          if (hasAudioPermission && SpeechRecognizer.isRecognitionAvailable(activity)) {
+            val recognizer = SpeechRecognizer.createSpeechRecognizer(activity)
+            activeSpeechRecognizer = recognizer
+
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+              putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+              putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+              putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
+              putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
+            }
+
+            recognizer.setRecognitionListener(object : RecognitionListener {
+              override fun onReadyForSpeech(params: Bundle?) {}
+              override fun onBeginningOfSpeech() {}
+              override fun onRmsChanged(rmsdB: Float) {}
+              override fun onBufferReceived(buffer: ByteArray?) {}
+              override fun onEndOfSpeech() {}
+
+              override fun onError(error: Int) {
+                finishSpeech(null)
+              }
+
+              override fun onResults(results: Bundle?) {
+                val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                val spoken = matches?.firstOrNull()?.trim()
+                finishSpeech(if (!spoken.isNullOrEmpty()) spoken else null)
+              }
+
+              override fun onPartialResults(partialResults: Bundle?) {}
+              override fun onEvent(eventType: Int, params: Bundle?) {}
+            })
+
+            mainHandler.postDelayed(speechTimeoutRunnable, 15000)
+            recognizer.startListening(intent)
+          } else {
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+              putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+              putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+              putExtra(RecognizerIntent.EXTRA_PROMPT, "KI-Sprachnotiz diktieren...")
+            }
+            activity.startActivityForResult(intent, speechRequestCode)
+          }
+        } catch (e: Throwable) {
+          finishSpeech(null)
         }
-        activity.startActivityForResult(intent, speechRequestCode)
-      } catch (e: Throwable) {
-        pendingSpeechPromise = null
-        promise.resolve(null)
       }
     }
   }
