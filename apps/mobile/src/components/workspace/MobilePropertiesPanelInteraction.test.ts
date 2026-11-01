@@ -22,18 +22,30 @@ vi.mock('react-native', () => ({ View: Surface, ScrollView: Surface, Pressable: 
   StyleSheet: { create: (styles: object) => styles, hairlineWidth: 0.5 } }))
 vi.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ bottom: 0 }) }))
 vi.mock('phosphor-react-native', () => ({
-  Plus: () => createElement('span', { 'data-plus': true }, '+'),
-  X: () => null,
-  WarningCircle: () => null,
+  Archive: () => null,
+  ArrowsInLineHorizontal: () => null,
+  ArrowsOutLineHorizontal: () => null,
+  CalendarBlank: () => null,
   CaretDown: () => null,
   CaretRight: () => null,
-  Shapes: () => null,
-  Circle: () => null,
-  Tag: () => null,
-  CalendarBlank: () => null,
+  CircleIcon: () => null,
   Clock: () => null,
+  Code: () => null,
+  Copy: () => null,
+  FilePdf: () => null,
   Folder: () => null,
   LinkSimple: () => null,
+  ListBullets: () => null,
+  MagnifyingGlass: () => null,
+  MapTrifold: () => null,
+  PencilSimple: () => null,
+  Plus: () => createElement('span', { 'data-plus': true }, '+'),
+  Shapes: () => null,
+  Star: () => null,
+  Tag: () => null,
+  Trash: () => null,
+  WarningCircle: () => null,
+  X: () => null,
 }))
 vi.mock('../../ui/theme/useMobileTheme', () => ({ useMobileColors: () => mobilePalettes.light,
   useMobileStyles: (factory: (colors: typeof mobilePalettes.light, metrics: typeof mobileMetrics[1.2]) => object) => factory(mobilePalettes.light, mobileMetrics[1.2]) }))
@@ -73,6 +85,63 @@ it.each(['phone', 'tablet'])('uses only a plus for empty property values on %s',
   expect(placeholder?.textContent).toBe('Status+')
   await act(async () => placeholder?.click())
   expect(onAddProperty).toHaveBeenCalledExactlyOnceWith('Status')
+})
+
+it('renders quick action buttons and file management actions when provided', async () => {
+  layout.device = 'phone'
+  const note = { ...workspaceScenarioForId('default').notes[0], status: '', rawContent: '---\ntype: Essay\n---\n# Test\n' }
+  const onToggleFavorite = vi.fn()
+  const onOpenFindInNote = vi.fn()
+  const onOpenTableOfContents = vi.fn()
+  const onToggleNoteWidth = vi.fn()
+  const onSetArchived = vi.fn()
+  const onToggleRawEditor = vi.fn()
+  const onDeleteNote = vi.fn()
+  const callback = vi.fn()
+
+  await act(async () => root.render(createElement(MobilePropertiesPanel, {
+    compact: false, showToolbar: false, note,
+    onAddProperty: callback, onAddRelationship: callback, onDeleteProperty: callback, onEditProperty: callback,
+    onInitializeProperties: callback, onCreateMissingType: callback, onOpenChangeNoteType: callback,
+    onRemoveRelationship: callback, onSelectNote: callback,
+    onToggleFavorite, onOpenFindInNote, onOpenTableOfContents, onToggleNoteWidth,
+    onSetArchived, onToggleRawEditor, onDeleteNote,
+  })))
+
+  const favBtn = host.querySelector<HTMLButtonElement>('[data-testid="properties-action-favorite"]')
+  expect(favBtn).not.toBeNull()
+  await act(async () => favBtn?.click())
+  expect(onToggleFavorite).toHaveBeenCalledOnce()
+
+  const findBtn = host.querySelector<HTMLButtonElement>('[data-testid="properties-action-find"]')
+  expect(findBtn).not.toBeNull()
+  await act(async () => findBtn?.click())
+  expect(onOpenFindInNote).toHaveBeenCalledOnce()
+
+  const tocBtn = host.querySelector<HTMLButtonElement>('[data-testid="properties-action-toc"]')
+  expect(tocBtn).not.toBeNull()
+  await act(async () => tocBtn?.click())
+  expect(onOpenTableOfContents).toHaveBeenCalledOnce()
+
+  const widthBtn = host.querySelector<HTMLButtonElement>('[data-testid="properties-action-width"]')
+  expect(widthBtn).not.toBeNull()
+  await act(async () => widthBtn?.click())
+  expect(onToggleNoteWidth).toHaveBeenCalledOnce()
+
+  const archiveBtn = host.querySelector<HTMLButtonElement>('[data-testid="properties-action-archive"]')
+  expect(archiveBtn).not.toBeNull()
+  await act(async () => archiveBtn?.click())
+  expect(onSetArchived).toHaveBeenCalledOnce()
+
+  const sourceBtn = host.querySelector<HTMLButtonElement>('[data-testid="properties-action-source-mode"]')
+  expect(sourceBtn).not.toBeNull()
+  await act(async () => sourceBtn?.click())
+  expect(onToggleRawEditor).toHaveBeenCalledOnce()
+
+  const deleteBtn = host.querySelector<HTMLButtonElement>('[data-testid="workspace-action-delete-note"]')
+  expect(deleteBtn).not.toBeNull()
+  await act(async () => deleteBtn?.click())
+  expect(onDeleteNote).toHaveBeenCalledOnce()
 })
 
 async function render(device: string) {

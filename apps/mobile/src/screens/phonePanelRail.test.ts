@@ -14,9 +14,10 @@ const states = ['sidebar', 'list', 'editor', 'properties'] as const
 
 it('places the actual panes on one contiguous rail with a sidebar peek', () => {
   expect(states.map(state => phoneRailOffset(state, width)))
-    .toEqual([0, -304, -694, -1084])
+    .toEqual([0, -304, -694, -694])
   expect(phoneRailFrame('list', width)).toEqual({ left: 304, width })
   expect(phoneRailFrame('editor', width)).toEqual({ left: 694, width })
+  expect(phoneRailFrame('properties', width)).toEqual({ left: 694, width })
 })
 
 it('keeps the exact same pane widths for every navigation position', () => {
@@ -41,14 +42,14 @@ it('leaves vertical scrolling and editor text selection with their content', () 
   expect(phoneRailIntent(geometry, list, { x: 160, y: 200, dx: 10, dy: 20 })).toBe('fail')
   expect(phoneRailIntent(geometry, editor, { x: 160, y: 200, dx: 35, dy: 0 })).toBe('fail')
   expect(phoneRailIntent(geometry, editor, { x: 8, y: 200, dx: 35, dy: 0 })).toBe('move')
-  expect(phoneRailIntent(geometry, editor, { x: 380, y: 200, dx: -35, dy: 0 })).toBe('move')
+  expect(phoneRailIntent(geometry, editor, { x: 380, y: 200, dx: -35, dy: 0 })).toBe('fail')
 })
 
 it('uses the visible edges inside landscape safe areas', () => {
   const landscape = { width: 728 }
   const offset = phoneRailOffset('editor', landscape.width)
   expect(phoneRailIntent(landscape, offset, { x: 8, y: 160, dx: 30, dy: 0 })).toBe('move')
-  expect(phoneRailIntent(landscape, offset, { x: 720, y: 160, dx: -30, dy: 0 })).toBe('move')
+  expect(phoneRailIntent(landscape, offset, { x: 720, y: 160, dx: -30, dy: 0 })).toBe('fail')
   expect(phoneRailIntent(landscape, offset, { x: 400, y: 160, dx: 30, dy: 0 })).toBe('fail')
 })
 
@@ -69,8 +70,8 @@ it('settles only at real pane positions and never overscrolls the rail', () => {
   const origin = phoneRailOffset('editor', width), bounds = phoneRailBounds(origin, width)
   expect(phoneRailSettleState({ offset: origin + 20, velocity: 0, bounds, width })).toBe('editor')
   expect(phoneRailSettleState({ offset: origin + 220, velocity: 0, bounds, width })).toBe('list')
-  expect(phoneRailSettleState({ offset: origin - 100, velocity: -1000, bounds, width })).toBe('properties')
-  expect(phoneRailDragOffset(origin, -9000, bounds)).toBe(-1084)
+  expect(phoneRailSettleState({ offset: origin - 100, velocity: -1000, bounds, width })).toBe('editor')
+  expect(phoneRailDragOffset(origin, -9000, bounds)).toBe(-694)
 })
 
 it('initializes captured helpers before the production worklet transform uses them', () => {

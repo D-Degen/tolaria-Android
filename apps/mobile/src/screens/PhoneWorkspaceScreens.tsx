@@ -176,6 +176,22 @@ function PhonePropertiesScreen(props: PhoneWorkspaceStateViewProps) {
           propertyDisplayModes={controller.snapshot.vaultConfig?.propertyDisplayModes}
           referenceGroups={referenceGroups}
           onSelectNote={openEditor}
+          onToggleFavorite={controller.onToggleFavorite}
+          onOpenFindInNote={controller.onOpenFindInNote}
+          onOpenTableOfContents={controller.onOpenTableOfContents}
+          onToggleNoteWidth={controller.onToggleNoteWidth}
+          onSetArchived={controller.onSetArchived}
+          onToggleRawEditor={openSourceEditor}
+          onCopyFilePath={controller.onCopyFilePath}
+          onOpenMoveNoteToFolder={controller.onOpenMoveNoteToFolder}
+          onOpenRenameNoteFile={controller.onOpenRenameNoteFile}
+          onRenameNoteFileToTitle={controller.onRenameNoteFileToTitle}
+          onCopyDeepLink={controller.onCopyDeepLink}
+          onExportNoteAsPdf={controller.onExportNoteAsPdf}
+          onDeleteNote={() => {
+            controller.onDeleteNote()
+            returnToEditor()
+          }}
         />
       </View>
     </View>

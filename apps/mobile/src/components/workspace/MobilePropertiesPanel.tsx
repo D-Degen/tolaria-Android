@@ -1,16 +1,28 @@
 import { useState, type ReactNode } from 'react'
 import { useMobileStyles, useMobileColors } from '../../ui/theme/useMobileTheme'
 import {
+  Archive,
+  ArrowsInLineHorizontal,
+  ArrowsOutLineHorizontal,
   CalendarBlank,
   CaretDown,
   CaretRight,
   CircleIcon,
   Clock,
+  Code,
+  Copy,
+  FilePdf,
   Folder,
   LinkSimple,
+  ListBullets,
+  MagnifyingGlass,
+  MapTrifold,
+  PencilSimple,
   Plus,
   Shapes,
+  Star,
   Tag,
+  Trash,
   WarningCircle,
 } from 'phosphor-react-native'
 import { Pressable, ScrollView, View } from 'react-native'
@@ -55,6 +67,19 @@ type MobilePropertiesPanelProps = {
   propertyDisplayModes?: Record<string, MobilePropertyDisplayMode> | null
   referenceGroups?: MobileNeighborhoodGroup[]
   typeDefinitions?: MobileTypeDefinitions
+  onToggleFavorite?: () => void
+  onOpenFindInNote?: () => void
+  onOpenTableOfContents?: () => void
+  onToggleNoteWidth?: () => void
+  onSetArchived?: (archived: boolean) => void
+  onToggleRawEditor?: () => void
+  onCopyFilePath?: () => void
+  onOpenMoveNoteToFolder?: () => void
+  onOpenRenameNoteFile?: () => void
+  onRenameNoteFileToTitle?: () => void
+  onCopyDeepLink?: () => void
+  onExportNoteAsPdf?: () => void
+  onDeleteNote?: () => void
 }
 
 export function MobilePropertiesPanel(props: MobilePropertiesPanelProps) {
@@ -139,6 +164,19 @@ function notePropertiesProps(props: MobilePropertiesPanelProps): Omit<NoteProper
     propertyDisplayModes: props.propertyDisplayModes,
     referenceGroups: props.referenceGroups ?? [],
     typeDefinitions: props.typeDefinitions,
+    onToggleFavorite: props.onToggleFavorite,
+    onOpenFindInNote: props.onOpenFindInNote,
+    onOpenTableOfContents: props.onOpenTableOfContents,
+    onToggleNoteWidth: props.onToggleNoteWidth,
+    onSetArchived: props.onSetArchived,
+    onToggleRawEditor: props.onToggleRawEditor,
+    onCopyFilePath: props.onCopyFilePath,
+    onOpenMoveNoteToFolder: props.onOpenMoveNoteToFolder,
+    onOpenRenameNoteFile: props.onOpenRenameNoteFile,
+    onRenameNoteFileToTitle: props.onRenameNoteFileToTitle,
+    onCopyDeepLink: props.onCopyDeepLink,
+    onExportNoteAsPdf: props.onExportNoteAsPdf,
+    onDeleteNote: props.onDeleteNote,
   }
 }
 
@@ -158,6 +196,19 @@ type NotePropertiesProps = {
   propertyDisplayModes?: Record<string, MobilePropertyDisplayMode> | null
   referenceGroups: MobileNeighborhoodGroup[]
   typeDefinitions?: MobileTypeDefinitions
+  onToggleFavorite?: () => void
+  onOpenFindInNote?: () => void
+  onOpenTableOfContents?: () => void
+  onToggleNoteWidth?: () => void
+  onSetArchived?: (archived: boolean) => void
+  onToggleRawEditor?: () => void
+  onCopyFilePath?: () => void
+  onOpenMoveNoteToFolder?: () => void
+  onOpenRenameNoteFile?: () => void
+  onRenameNoteFileToTitle?: () => void
+  onCopyDeepLink?: () => void
+  onExportNoteAsPdf?: () => void
+  onDeleteNote?: () => void
 }
 
 function NoteProperties(props: NotePropertiesProps) {
@@ -192,9 +243,15 @@ function NoteProperties(props: NotePropertiesProps) {
 
   const propertyCount = 1 + (note.status ? 1 : 0) + (note.tags?.length ? 1 : 0) + (note.properties?.length ?? 0)
   const relationshipCount = (note.relationships?.length ?? 0) + (referenceGroups?.length ?? 0)
+  const hasQuickActions = Boolean(
+    props.onToggleFavorite || props.onOpenFindInNote || props.onOpenTableOfContents ||
+    props.onEnterNeighborhood || props.onToggleNoteWidth || props.onSetArchived || props.onToggleRawEditor
+  )
 
   return (
     <>
+      {hasQuickActions ? <NoteQuickActionBar props={props} /> : null}
+
       <PropertyAccordionSection
         count={propertyCount}
         expanded={propertiesExpanded}
@@ -235,6 +292,137 @@ function NoteProperties(props: NotePropertiesProps) {
         <NoteInfoPropertyRows props={props} />
       </PropertyAccordionSection>
     </>
+  )
+}
+
+function NoteQuickActionBar({ props }: { props: NotePropertiesProps }) {
+  const { note, onToggleFavorite, onOpenFindInNote, onOpenTableOfContents, onEnterNeighborhood, onToggleNoteWidth, onSetArchived, onToggleRawEditor } = props
+  const themeStyles = useMobileStyles(createPropertyPanelStyles)
+  const { quickActionStyles } = themeStyles
+  const mobileColors = useMobileColors()
+
+  const isFavorite = Boolean(note.favorite)
+  const isArchived = Boolean(note.archived)
+  const isWide = note.noteWidth === 'wide'
+
+  return (
+    <View style={quickActionStyles.bar} testID="properties-quick-action-bar">
+      {onToggleFavorite ? (
+        <Pressable
+          accessibilityLabel={isFavorite ? mobileText('command.note.removeFavorite') : mobileText('command.note.addFavorite')}
+          accessibilityRole="button"
+          style={({ pressed }) => [
+            quickActionStyles.button,
+            isFavorite && quickActionStyles.buttonActive,
+            pressed && quickActionStyles.buttonPressed,
+          ]}
+          testID="properties-action-favorite"
+          onPress={onToggleFavorite}
+        >
+          <Star
+            color={isFavorite ? mobileColors.yellow : mobileColors.textMuted}
+            size={18}
+            weight={isFavorite ? 'fill' : 'regular'}
+          />
+        </Pressable>
+      ) : null}
+
+      {onOpenFindInNote ? (
+        <Pressable
+          accessibilityLabel={mobileText('command.note.findInNote')}
+          accessibilityRole="button"
+          style={({ pressed }) => [
+            quickActionStyles.button,
+            pressed && quickActionStyles.buttonPressed,
+          ]}
+          testID="properties-action-find"
+          onPress={onOpenFindInNote}
+        >
+          <MagnifyingGlass color={mobileColors.textMuted} size={18} />
+        </Pressable>
+      ) : null}
+
+      {onOpenTableOfContents ? (
+        <Pressable
+          accessibilityLabel={mobileText('menu.note.toggleTableOfContents')}
+          accessibilityRole="button"
+          style={({ pressed }) => [
+            quickActionStyles.button,
+            pressed && quickActionStyles.buttonPressed,
+          ]}
+          testID="properties-action-toc"
+          onPress={onOpenTableOfContents}
+        >
+          <ListBullets color={mobileColors.textMuted} size={18} />
+        </Pressable>
+      ) : null}
+
+      {onEnterNeighborhood ? (
+        <Pressable
+          accessibilityLabel={mobileText('editor.toolbar.openNeighborhood')}
+          accessibilityRole="button"
+          style={({ pressed }) => [
+            quickActionStyles.button,
+            pressed && quickActionStyles.buttonPressed,
+          ]}
+          testID="properties-action-neighborhood"
+          onPress={() => onEnterNeighborhood(note.id)}
+        >
+          <MapTrifold color={mobileColors.textMuted} size={18} />
+        </Pressable>
+      ) : null}
+
+      {onToggleNoteWidth ? (
+        <Pressable
+          accessibilityLabel={isWide ? mobileText('editor.toolbar.noteWidthNormal') : mobileText('editor.toolbar.noteWidthWide')}
+          accessibilityRole="button"
+          style={({ pressed }) => [
+            quickActionStyles.button,
+            isWide && quickActionStyles.buttonActive,
+            pressed && quickActionStyles.buttonPressed,
+          ]}
+          testID="properties-action-width"
+          onPress={onToggleNoteWidth}
+        >
+          {isWide ? (
+            <ArrowsInLineHorizontal color={mobileColors.primary} size={18} />
+          ) : (
+            <ArrowsOutLineHorizontal color={mobileColors.textMuted} size={18} />
+          )}
+        </Pressable>
+      ) : null}
+
+      {onSetArchived ? (
+        <Pressable
+          accessibilityLabel={isArchived ? mobileText('command.note.unarchiveNote') : mobileText('command.note.archiveNote')}
+          accessibilityRole="button"
+          style={({ pressed }) => [
+            quickActionStyles.button,
+            isArchived && quickActionStyles.buttonActive,
+            pressed && quickActionStyles.buttonPressed,
+          ]}
+          testID="properties-action-archive"
+          onPress={() => onSetArchived(!isArchived)}
+        >
+          <Archive color={isArchived ? mobileColors.primary : mobileColors.textMuted} size={18} />
+        </Pressable>
+      ) : null}
+
+      {onToggleRawEditor ? (
+        <Pressable
+          accessibilityLabel={mobileText('editor.toolbar.rawOpen')}
+          accessibilityRole="button"
+          style={({ pressed }) => [
+            quickActionStyles.button,
+            pressed && quickActionStyles.buttonPressed,
+          ]}
+          testID="properties-action-source-mode"
+          onPress={onToggleRawEditor}
+        >
+          <Code color={mobileColors.textMuted} size={18} />
+        </Pressable>
+      ) : null}
+    </View>
   )
 }
 
@@ -324,11 +512,90 @@ function StandardPropertyRows({ missingTypeName, props }: { missingTypeName: str
 }
 
 function NoteInfoPropertyRows({ props }: { props: NotePropertiesProps }) {
-  const { layoutProbe, note } = props
+  const {
+    layoutProbe,
+    note,
+    onCopyDeepLink,
+    onCopyFilePath,
+    onDeleteNote,
+    onExportNoteAsPdf,
+    onOpenMoveNoteToFolder,
+    onOpenRenameNoteFile,
+    onRenameNoteFileToTitle,
+  } = props
+  const themeStyles = useMobileStyles(createPropertyPanelStyles)
+  const { quickActionStyles } = themeStyles
   const mobileColors = useMobileColors()
+
+  const notePath = note.path ?? note.id ?? ''
+  const pathParts = notePath.split('/').filter(Boolean)
+  const folder = pathParts.length > 1 ? pathParts.slice(0, -1).join('/') : '/'
+  const stem = pathParts.at(-1)?.replace(/\.md$/u, '') ?? ''
 
   return (
     <>
+      {note.path ? (
+        <MobilePropertyRow
+          icon={<Copy color={mobileColors.textMuted} size={14} />}
+          label={mobileText('editor.toolbar.copyFilePath')}
+          layoutProbe={layoutProbe}
+          layoutProbeId="properties.row.file-path"
+          testID="property-row-file-path"
+          value={note.path}
+          onPress={onCopyFilePath}
+        />
+      ) : null}
+      {onOpenMoveNoteToFolder ? (
+        <MobilePropertyRow
+          icon={<Folder color={mobileColors.textMuted} size={14} />}
+          label={mobileText('command.note.moveToFolder')}
+          layoutProbe={layoutProbe}
+          layoutProbeId="properties.row.move-folder"
+          testID="property-action-move-folder"
+          value={folder}
+          onPress={onOpenMoveNoteToFolder}
+        />
+      ) : null}
+      {onOpenRenameNoteFile ? (
+        <MobilePropertyRow
+          icon={<PencilSimple color={mobileColors.textMuted} size={14} />}
+          label={mobileText('editor.filename.rename')}
+          layoutProbe={layoutProbe}
+          layoutProbeId="properties.row.rename-file"
+          testID="property-action-rename-file"
+          value={stem}
+          onPress={onOpenRenameNoteFile}
+        />
+      ) : null}
+      {onRenameNoteFileToTitle && note.title && stem && note.title !== stem ? (
+        <PropertyActionRow
+          label={mobileText('editor.filename.renameToTitle')}
+          layoutProbe={layoutProbe}
+          layoutProbeId="properties.action.rename-to-title"
+          testID="property-action-rename-to-title"
+          onPress={onRenameNoteFileToTitle}
+        />
+      ) : null}
+      {onCopyDeepLink ? (
+        <MobilePropertyRow
+          icon={<LinkSimple color={mobileColors.textMuted} size={14} />}
+          label={mobileText('command.note.copyDeepLink')}
+          layoutProbe={layoutProbe}
+          layoutProbeId="properties.action.copy-deep-link"
+          testID="property-action-copy-deep-link"
+          onPress={onCopyDeepLink}
+        />
+      ) : null}
+      {onExportNoteAsPdf ? (
+        <MobilePropertyRow
+          icon={<FilePdf color={mobileColors.textMuted} size={14} />}
+          label={mobileText('command.note.exportPdf')}
+          layoutProbe={layoutProbe}
+          layoutProbeId="properties.action.export-pdf"
+          testID="property-action-export-pdf"
+          onPress={onExportNoteAsPdf}
+        />
+      ) : null}
       <MobilePropertyRow
         icon={<CalendarBlank color={mobileColors.textMuted} size={14} />}
         label={mobileText('noteList.sort.created')}
@@ -361,6 +628,23 @@ function NoteInfoPropertyRows({ props }: { props: NotePropertiesProps }) {
         testID="property-row-links"
         value={`${note.links}`}
       />
+      {onDeleteNote ? (
+        <Pressable
+          accessibilityLabel={mobileText('command.note.deleteNote')}
+          accessibilityRole="button"
+          style={({ pressed }) => [
+            quickActionStyles.deleteButton,
+            pressed && quickActionStyles.deleteButtonPressed,
+          ]}
+          testID="workspace-action-delete-note"
+          onPress={onDeleteNote}
+        >
+          <Trash color={mobileColors.danger} size={16} />
+          <Text style={quickActionStyles.deleteText}>
+            {mobileText('command.note.deleteNote')}
+          </Text>
+        </Pressable>
+      ) : null}
     </>
   )
 }

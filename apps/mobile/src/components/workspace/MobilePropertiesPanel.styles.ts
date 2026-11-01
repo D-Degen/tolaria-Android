@@ -24,6 +24,7 @@ export function createPropertyPanelStyles(mobileColors: MobileColors, metrics: M
     typeStyles: createTypeStyles(mobileColors, metrics),
     propertyDisplayStyles: createPropertyDisplayStyles(mobileColors, metrics),
     actionStyles: createActionStyles(mobileColors, metrics),
+    quickActionStyles: createQuickActionStyles(mobileColors, metrics),
   }
 }
 
@@ -420,6 +421,57 @@ function createEditableTextStyles(mobileColors: MobileColors, metrics: MobileMet
       fontWeight: '400',
       paddingHorizontal: metrics.size(6),
       paddingVertical: metrics.size(2),
+    },
+  })
+}
+
+function createQuickActionStyles(mobileColors: MobileColors, metrics: MobileMetrics) {
+  const { space: mobileSpace } = metrics
+  return StyleSheet.create({
+    bar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: mobileSpace.xs,
+      paddingVertical: mobileSpace.xs,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: mobileColors.border,
+      marginBottom: mobileSpace.sm,
+      gap: metrics.size(4),
+    },
+    button: {
+      flex: 1,
+      maxWidth: 44,
+      height: 38,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 8,
+      backgroundColor: mobileColors.control,
+    },
+    buttonActive: {
+      backgroundColor: mobileColors.primarySoft,
+    },
+    buttonPressed: {
+      opacity: 0.7,
+    },
+    deleteButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 44,
+      borderRadius: 8,
+      backgroundColor: mobileColors.dangerSoft,
+      gap: mobileSpace.xs,
+      marginTop: mobileSpace.md,
+      paddingHorizontal: mobileSpace.sm,
+    },
+    deleteButtonPressed: {
+      opacity: 0.8,
+    },
+    deleteText: {
+      color: mobileColors.danger,
+      fontSize: metrics.type.caption,
+      fontWeight: '600',
     },
   })
 }

@@ -10,7 +10,8 @@ type Movement = { x: number; y: number; dx: number; dy: number }
 export function phoneRailOffset(state: PhoneWorkspaceState, width: number) {
   'worklet'
   const drawer = phoneWorkspaceSidebarDrawerWidth(width)
-  return { sidebar: 0, list: -drawer, editor: -drawer - width, properties: -drawer - 2 * width }[state];
+  const editor = -drawer - width
+  return { sidebar: 0, list: -drawer, editor, properties: editor }[state];
 }
 
 export function phoneRailFrame(state: PhoneWorkspaceState, width: number) {
