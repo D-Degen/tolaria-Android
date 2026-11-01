@@ -223,7 +223,7 @@ export function PhoneWorkspaceScreens(props: PhoneWorkspaceStateViewProps) {
       <PhoneScreenLayer active={props.phoneState === 'editor'} retain frame={phoneRailFrame('editor', width)} testID="phone-editor-slot">
         <PhoneEditorScreen {...props} />
       </PhoneScreenLayer>
-      <PhoneScreenLayer active={props.phoneState === 'properties'} eager frame={phoneRailFrame('properties', width)} testID="phone-properties-slot">
+      <PhoneScreenLayer active={props.phoneState === 'properties'} frame={phoneRailFrame('properties', width)} testID="phone-properties-slot">
         <PhonePropertiesScreen {...props} />
       </PhoneScreenLayer>
     </Fragment>
