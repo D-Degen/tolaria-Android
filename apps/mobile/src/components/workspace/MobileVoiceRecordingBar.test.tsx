@@ -65,6 +65,7 @@ vi.mock('react-native', () => ({
     createElement(
       'button',
       {
+        type: 'button',
         'aria-label': accessibilityLabel,
         'data-testid': testID,
         onClick: onPress,

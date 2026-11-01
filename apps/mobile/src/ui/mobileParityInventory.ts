@@ -387,5 +387,12 @@ export const mobileParityInventory = [
     desktopSource: 'Desktop task list panel and sidebar task view',
     mobileFile: 'src/components/workspace/MobileTaskListPanel.tsx',
     surface: 'Mobile task list panel',
+  },
+  {
+    assertions: ['voice recording bar interactions and audio streaming tests'],
+    contracts: ['desktopToolbarParity', 'desktopPanelParity'],
+    desktopSource: 'Desktop voice notes audio recording and AI structuring bar',
+    mobileFile: 'src/components/workspace/MobileVoiceRecordingBar.tsx',
+    surface: 'Mobile voice recording bar',
   }
 ] as const satisfies MobileParityInventoryEntry[]
