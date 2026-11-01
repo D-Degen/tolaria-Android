@@ -18,9 +18,25 @@ vi.mock('react-native', () => ({
 vi.mock('../components/workspace/MobileNoteListPanel', () => ({ MobileNoteListPanel: () => null }))
 vi.mock('../components/workspace/MobileTaskListPanel', () => ({ MobileTaskListPanel: () => null }))
 vi.mock('../components/workspace/MobilePropertiesPanel', () => ({
-  MobilePropertiesPanel: () => {
-    calls.properties()
-    return null
+  MobilePropertiesPanel: (props: Record<string, unknown>) => {
+    calls.properties(props)
+    return createElement('div', {
+      'data-testid': 'mock-properties-panel',
+      'data-source-mode': String(props.isSourceMode),
+    }, [
+      createElement('button', {
+        key: 'find',
+        type: 'button',
+        'data-testid': 'mock-find-button',
+        onClick: props.onOpenFindInNote as () => void,
+      }),
+      createElement('button', {
+        key: 'raw',
+        type: 'button',
+        'data-testid': 'mock-raw-button',
+        onClick: props.onToggleRawEditor as () => void,
+      }),
+    ])
   },
 }))
 vi.mock('../components/workspace/MobileWorkspaceSidebar', () => ({ MobileWorkspaceSidebar: () => null }))
@@ -108,5 +124,54 @@ describe('PhonePropertiesOverlayVisibility', () => {
     // Clicking scrim closes properties and returns to editor
     await act(async () => scrim?.click())
     expect(openEditor).toHaveBeenCalledOnce()
+  })
+
+  it('hides properties panel and returns to editor when find-in-note is selected', async () => {
+    const openEditor = vi.fn()
+    const onOpenFindInNote = vi.fn()
+
+    const baseProps = createPhoneWorkspaceScreenProps(() => {})
+    const props = {
+      ...baseProps,
+      controller: {
+        ...baseProps.controller,
+        onOpenFindInNote,
+      },
+      phoneState: 'properties' as const,
+      openEditor,
+    }
+
+    await act(async () => root.render(createElement(PhoneWorkspaceScreens, props)))
+
+    const findButton = host.querySelector<HTMLButtonElement>('[data-testid="mock-find-button"]')
+    expect(findButton).not.toBeNull()
+
+    await act(async () => findButton?.click())
+
+    // Must trigger find in note AND returnToEditor to hide the properties overlay
+    expect(onOpenFindInNote).toHaveBeenCalledOnce()
+    expect(openEditor).toHaveBeenCalledOnce()
+  })
+
+  it('toggles raw source mode and passes isSourceMode status correctly', async () => {
+    const openSourceEditor = vi.fn()
+
+    const baseProps = createPhoneWorkspaceScreenProps(() => {})
+    const props = {
+      ...baseProps,
+      phoneState: 'properties' as const,
+      openSourceEditor,
+      sourceModeRequest: 1, // odd number indicates source mode
+    }
+
+    await act(async () => root.render(createElement(PhoneWorkspaceScreens, props)))
+
+    const panel = host.querySelector('[data-testid="mock-properties-panel"]')
+    expect(panel?.getAttribute('data-source-mode')).toBe('true')
+
+    const rawButton = host.querySelector<HTMLButtonElement>('[data-testid="mock-raw-button"]')
+    await act(async () => rawButton?.click())
+
+    expect(openSourceEditor).toHaveBeenCalledOnce()
   })
 })

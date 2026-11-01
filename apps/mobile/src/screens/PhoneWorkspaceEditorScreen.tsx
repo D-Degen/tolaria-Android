@@ -39,7 +39,7 @@ function PhoneEditorBody(props: PhoneEditorBodyProps) {
 		sourceModeRequest,
 		tableOfContentsTarget,
 	} = props;
-	const sourceModeRequested = sourceModeRequest > 0;
+	const sourceModeRequested = sourceModeRequest % 2 === 1;
 
 	return (
 		<TabletEditorPanel

@@ -178,10 +178,14 @@ function PhonePropertiesScreen(props: PhoneWorkspaceStateViewProps) {
           referenceGroups={referenceGroups}
           onSelectNote={openEditor}
           onToggleFavorite={controller.onToggleFavorite}
-          onOpenFindInNote={controller.onOpenFindInNote}
+          onOpenFindInNote={() => {
+            controller.onOpenFindInNote?.()
+            returnToEditor()
+          }}
           onOpenTableOfContents={controller.onOpenTableOfContents}
           onToggleNoteWidth={controller.onToggleNoteWidth}
           onSetArchived={controller.onSetArchived}
+          isSourceMode={props.sourceModeRequest % 2 === 1}
           onToggleRawEditor={openSourceEditor}
           onCopyFilePath={controller.onCopyFilePath}
           onOpenMoveNoteToFolder={controller.onOpenMoveNoteToFolder}

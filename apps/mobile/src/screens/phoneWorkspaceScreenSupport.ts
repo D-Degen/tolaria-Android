@@ -147,13 +147,14 @@ export function usePhoneWorkspaceNavigation({
 					applyDraftLeaveAction(controller, leavingNote, flushed);
 				}
 				controller.onSelectNote(noteId);
+				setSourceModeRequest(0);
 			}
 			setPhoneState("editor");
 		},
-		[controller, saveActiveEditor, setPhoneState],
+		[controller, saveActiveEditor, setPhoneState, setSourceModeRequest],
 	);
 	const openSourceEditor = useCallback(() => {
-		setSourceModeRequest((current) => current + 1);
+		setSourceModeRequest((current) => (current === 0 ? 1 : 0));
 		setPhoneState("editor");
 	}, [setPhoneState, setSourceModeRequest]);
 	const openNeighborhoodList = useCallback(
@@ -185,6 +186,7 @@ export type PhoneWorkspaceStateViewProps = {
 	phoneLayoutProbe: MobileLayoutProbe;
 	phoneState: PhoneWorkspaceState;
 	onRegisterEditorCommands?: RegisterMobileEditorCommands;
+	onToggleRawEditor?: () => void;
 	sourceModeRequest: number;
 	suggestionNotes: MobileNote[];
 	tableOfContentsTarget: PhoneTableOfContentsTargetRequest | null;

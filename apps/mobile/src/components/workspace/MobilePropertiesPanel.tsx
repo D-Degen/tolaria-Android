@@ -72,6 +72,7 @@ type MobilePropertiesPanelProps = {
   onToggleNoteWidth?: () => void
   onSetArchived?: (archived: boolean) => void
   onToggleRawEditor?: () => void
+  isSourceMode?: boolean
   onCopyFilePath?: () => void
   onOpenMoveNoteToFolder?: () => void
   onOpenRenameNoteFile?: () => void
@@ -169,6 +170,7 @@ function notePropertiesProps(props: MobilePropertiesPanelProps): Omit<NoteProper
     onToggleNoteWidth: props.onToggleNoteWidth,
     onSetArchived: props.onSetArchived,
     onToggleRawEditor: props.onToggleRawEditor,
+    isSourceMode: props.isSourceMode,
     onCopyFilePath: props.onCopyFilePath,
     onOpenMoveNoteToFolder: props.onOpenMoveNoteToFolder,
     onOpenRenameNoteFile: props.onOpenRenameNoteFile,
@@ -201,6 +203,7 @@ type NotePropertiesProps = {
   onToggleNoteWidth?: () => void
   onSetArchived?: (archived: boolean) => void
   onToggleRawEditor?: () => void
+  isSourceMode?: boolean
   onCopyFilePath?: () => void
   onOpenMoveNoteToFolder?: () => void
   onOpenRenameNoteFile?: () => void
@@ -303,6 +306,7 @@ function NoteQuickActionBar({ props }: { props: NotePropertiesProps }) {
   const isFavorite = Boolean(note.favorite)
   const isArchived = Boolean(note.archived)
   const isWide = note.noteWidth === 'wide'
+  const isSourceMode = Boolean(props.isSourceMode)
 
   return (
     <View style={quickActionStyles.bar} testID="properties-quick-action-bar">
@@ -409,16 +413,17 @@ function NoteQuickActionBar({ props }: { props: NotePropertiesProps }) {
 
       {onToggleRawEditor ? (
         <Pressable
-          accessibilityLabel={mobileText('editor.toolbar.rawOpen')}
+          accessibilityLabel={mobileText(isSourceMode ? 'editor.toolbar.rawReturn' : 'editor.toolbar.rawOpen')}
           accessibilityRole="button"
           style={({ pressed }) => [
             quickActionStyles.button,
+            isSourceMode && quickActionStyles.buttonActive,
             pressed && quickActionStyles.buttonPressed,
           ]}
           testID="properties-action-source-mode"
           onPress={onToggleRawEditor}
         >
-          <Code color={mobileColors.textMuted} size={18} />
+          <Code color={isSourceMode ? mobileColors.primary : mobileColors.textMuted} size={18} />
         </Pressable>
       ) : null}
     </View>

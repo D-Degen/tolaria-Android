@@ -5,10 +5,12 @@ import { useMobileColors, useMobileMetrics } from '../ui/theme/useMobileTheme'
 import type { EditorToolbarProps } from './TabletEditorPanel.types'
 
 export function MobileEditorToolbarMarkdownSecondaryActions({
+  compact,
   onOpenMoreActions,
-}: Pick<EditorToolbarProps, 'onOpenMoreActions' | 'onOpenSmartNotes' | 'onOpenTableOfContents'>) {
+}: Pick<EditorToolbarProps, 'compact' | 'onOpenMoreActions' | 'onOpenSmartNotes' | 'onOpenTableOfContents'>) {
   const mobileColors = useMobileColors()
   const toolbarAction = useMobileMetrics().toolbarAction
+  if (compact) return null
   return (
     <MobileIconButton
       accessibilityLabel={mobileText('editor.toolbar.moreActions')}

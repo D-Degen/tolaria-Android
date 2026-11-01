@@ -7,6 +7,7 @@ import type { EditorToolbarProps } from './TabletEditorPanel.types'
 export function MobileEditorToolbarFileActions(props: EditorToolbarProps) {
   const mobileColors = useMobileColors()
   const toolbarAction = useMobileMetrics().toolbarAction
+  if (props.compact) return null
   return (
     <MobileIconButton
       accessibilityLabel={mobileText('editor.toolbar.moreActions')}

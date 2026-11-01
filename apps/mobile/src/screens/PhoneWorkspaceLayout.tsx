@@ -69,6 +69,7 @@ function PhoneWorkspaceContent(props: PhoneWorkspaceRootProps) {
         phoneLayoutProbe={props.phoneLayoutProbe}
         phoneState={props.phoneState}
         onRegisterEditorCommands={props.editorCommandRegistry.register}
+        onToggleRawEditor={props.editorCommandRegistry.commands.toggleRawEditor}
         sourceModeRequest={props.sourceModeRequest}
         suggestionNotes={props.suggestionNotes}
         tableOfContentsTarget={props.tableOfContentsTarget}

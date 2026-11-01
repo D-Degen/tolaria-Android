@@ -8,7 +8,6 @@ import { useMobileColors, useMobileMetrics } from '../ui/theme/useMobileTheme'
 import type { EditorToolbarProps } from './TabletEditorPanel.types'
 
 export function MobileEditorToolbarMarkdownPrimaryActions({
-  compact,
   note,
   onOpenChangeNoteType,
   onToggleFavorite,
@@ -16,7 +15,7 @@ export function MobileEditorToolbarMarkdownPrimaryActions({
   sourceModeActive,
 }: Pick<
   EditorToolbarProps,
-  'compact' | 'note' | 'onOpenChangeNoteType' | 'onToggleFavorite' | 'onToggleSourceMode'
+  'note' | 'onOpenChangeNoteType' | 'onToggleFavorite' | 'onToggleSourceMode'
 > & {
   sourceModeActive: boolean
 }) {
@@ -50,21 +49,19 @@ export function MobileEditorToolbarMarkdownPrimaryActions({
           weight={note.favorite ? 'fill' : 'regular'}
         />
       </MobileIconButton>
-      {!compact ? (
-        <MobileIconButton
-          accessibilityLabel={mobileText(
-            sourceModeActive ? 'editor.toolbar.rawReturn' : 'editor.toolbar.rawOpen',
-          )}
-          selected={sourceModeActive}
-          testID="editor-source-action"
-          onPress={onToggleSourceMode}
-        >
-          <Code
-            color={sourceModeActive ? mobileColors.primary : mobileColors.textMuted}
-            size={toolbarAction.iconSize}
-          />
-        </MobileIconButton>
-      ) : null}
+      <MobileIconButton
+        accessibilityLabel={mobileText(
+          sourceModeActive ? 'editor.toolbar.rawReturn' : 'editor.toolbar.rawOpen',
+        )}
+        selected={sourceModeActive}
+        testID="editor-source-action"
+        onPress={onToggleSourceMode}
+      >
+        <Code
+          color={sourceModeActive ? mobileColors.primary : mobileColors.textMuted}
+          size={toolbarAction.iconSize}
+        />
+      </MobileIconButton>
     </>
   )
 }
