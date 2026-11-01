@@ -373,5 +373,19 @@ export const mobileParityInventory = [
     desktopSource: 'BlockNote formatting commands and Tolaria toolbar colors/icons; grouped for touch',
     mobileFile: 'src/components/workspace/MobileCompactFormattingToolbar.tsx',
     surface: 'Contextual native formatting controls',
+  },
+  {
+    assertions: ['task due toolbar affordance interactions and tests'],
+    contracts: ['desktopToolbarParity'],
+    desktopSource: 'Desktop task due toolbar and editor affordances',
+    mobileFile: 'src/components/workspace/MobileTaskDueToolbarAffordance.tsx',
+    surface: 'Mobile task due toolbar affordance',
+  },
+  {
+    assertions: ['task list panel interactions and tests'],
+    contracts: ['desktopSidebarParity', 'desktopPanelParity'],
+    desktopSource: 'Desktop task list panel and sidebar task view',
+    mobileFile: 'src/components/workspace/MobileTaskListPanel.tsx',
+    surface: 'Mobile task list panel',
   }
 ] as const satisfies MobileParityInventoryEntry[]

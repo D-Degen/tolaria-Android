@@ -127,6 +127,7 @@ function documentRules(
 ): string[] {
 	const desktopEditorParity = metrics.editor;
 	const widePadding = `clamp(${metrics.size(24)}px, 4vw, ${metrics.size(72)}px)`;
+	const keyboardScrollPadding = `${Math.round(desktopEditorParity.bodyLineHeight * 2)}px`;
 	return [
 		cssRule("html, body", [
 			["background", mobileColors.editor],
@@ -139,8 +140,12 @@ function documentRules(
 			["line-height", `${desktopEditorParity.bodyLineHeight}px`],
 			["margin", 0],
 			["padding", 0],
+			["scroll-padding-bottom", keyboardScrollPadding],
 		]),
-		cssRule("#root > div:first-child", [["overflow-x", "hidden"]]),
+		cssRule("#root > div:first-child", [
+			["overflow-x", "hidden"],
+			["scroll-padding-bottom", keyboardScrollPadding],
+		]),
 		cssRule(".ProseMirror", [
 			["box-sizing", "border-box"],
 			["caret-color", mobileColors.primary],
@@ -151,10 +156,15 @@ function documentRules(
 			["overflow-wrap", "anywhere"],
 			[
 				"padding",
-				`${desktopEditorParity.contentPaddingVertical}px ${wide ? widePadding : `${horizontalPadding}px`} ${metrics.size(96)}px`,
+				`${desktopEditorParity.contentPaddingVertical}px ${wide ? widePadding : `${horizontalPadding}px`} ${metrics.size(160)}px`,
 			],
+			["scroll-padding-bottom", keyboardScrollPadding],
 			["width", "100%"],
 		]),
+		cssRule(
+			".ProseMirror p, .ProseMirror h1, .ProseMirror h2, .ProseMirror h3, .ProseMirror h4, .ProseMirror h5, .ProseMirror h6, .ProseMirror li, .ProseMirror blockquote, .ProseMirror pre",
+			[["scroll-margin-bottom", keyboardScrollPadding]],
+		),
 	];
 }
 

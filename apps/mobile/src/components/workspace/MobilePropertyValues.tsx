@@ -1,4 +1,15 @@
-import { useMobileStyles } from '../../ui/theme/useMobileTheme'
+import { useMobileColors, useMobileStyles } from '../../ui/theme/useMobileTheme'
+import {
+  CalendarBlank,
+  CircleIcon,
+  Hash,
+  Link,
+  ListBullets,
+  Palette,
+  Smiley,
+  TextT,
+  ToggleLeft,
+} from 'phosphor-react-native'
 import { Pressable, View } from 'react-native'
 import { mobileText } from '../../i18n/mobileText'
 import type { MobileLayoutProbe } from '../../qa/mobileLayoutProbe'
@@ -67,6 +78,7 @@ export function EditablePropertyRow({
   property: MobileProperty
 }) {
   const themeStyles = useMobileStyles(createPropertyPanelStyles)
+  const mobileColors = useMobileColors()
   const { propertyStyles } = themeStyles
   const testId = `property-row-${testIdSegment(property.key)}`
   const display = mobilePropertyDisplay(
@@ -78,9 +90,11 @@ export function EditablePropertyRow({
     },
     propertyDisplayModes,
   )
+  const icon = propertyTypeIcon(property.key, display.kind, mobileColors.textMuted)
 
   return (
     <MobilePropertyRow
+      icon={icon}
       label={property.label}
       layoutProbe={layoutProbe}
       layoutProbeId={`properties.row.${testIdSegment(property.key)}`}
@@ -98,6 +112,28 @@ export function EditablePropertyRow({
       }
     />
   )
+}
+
+function propertyTypeIcon(key: string, kind: MobilePropertyDisplay['kind'], color: string) {
+  if (key === 'icon') return <Smiley color={color} size={14} />
+  switch (kind) {
+    case 'number':
+      return <Hash color={color} size={14} />
+    case 'date':
+      return <CalendarBlank color={color} size={14} />
+    case 'boolean':
+      return <ToggleLeft color={color} size={14} />
+    case 'list':
+      return <ListBullets color={color} size={14} />
+    case 'color':
+      return <Palette color={color} size={14} />
+    case 'url':
+      return <Link color={color} size={14} />
+    case 'status':
+      return <CircleIcon color={color} size={14} />
+    default:
+      return <TextT color={color} size={14} />
+  }
 }
 
 function EditablePropertyValueDisplay({ display }: { display: MobilePropertyDisplay }) {

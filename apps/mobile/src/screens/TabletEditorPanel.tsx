@@ -1,18 +1,10 @@
 import { Sparkle } from "phosphor-react-native";
-import {
-	type ReactElement,
-	useCallback,
-	useContext,
-	useEffect,
-	useRef,
-	useState,
-} from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import {
 	AppState,
 	type LayoutChangeEvent,
 	type NativeScrollEvent,
 	type NativeSyntheticEvent,
-	type RefreshControlProps,
 	ScrollView,
 	StyleSheet,
 } from "react-native";
@@ -49,7 +41,6 @@ import type {
 	MobileEditorBlock,
 	MobileNote,
 } from "../workspace/mobileWorkspaceModel";
-import { useMobilePullToSync } from "../workspace/useMobilePullToSync";
 import { WorkspaceSnapshotRevisionContext } from "../workspace/workspaceSyncEditors";
 import { MobileEditorToolbar } from "./MobileEditorToolbar";
 import type {
@@ -77,7 +68,6 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
 	const mobileColors = useMobileColors();
 	const metrics = useMobileMetrics();
 	const bottomInset = useMobileBottomInset();
-	const refreshControl = useMobilePullToSync();
 	const {
 		compact,
 		initialEditing = true,
@@ -210,27 +200,34 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
 				noteRead={noteRead}
 				onScroll={onScroll}
 				onScrollViewRef={setScrollViewNode}
-				refreshControl={refreshControl}
 			/>
 			{fileMode === "markdown" && onOpenSmartNotes ? (
 				<Button
 					accessibilityLabel={mobileText("editor.toolbar.openAi")}
-					android_ripple={{ color: "rgba(99, 102, 241, 0.2)", borderless: false }}
+					android_ripple={{
+						color: "rgba(99, 102, 241, 0.2)",
+						borderless: false,
+					}}
 					className="shadow-md active:opacity-90"
 					size="icon"
 					style={StyleSheet.flatten([
 						panelStyles.smartNotesFab,
 						{
 							bottom:
-								(effectiveEditing ? mobilePaneFooterRowHeight + bottomInset : bottomInset) +
-								metrics.size(16),
+								(effectiveEditing
+									? mobilePaneFooterRowHeight + bottomInset
+									: bottomInset) + metrics.size(16),
 						},
 					])}
 					testID="editor-smart-notes-action"
 					variant="ghost"
 					onPress={onOpenSmartNotes}
 				>
-					<Sparkle color={mobileColors.primary} size={metrics.size(20)} weight="fill" />
+					<Sparkle
+						color={mobileColors.primary}
+						size={metrics.size(20)}
+						weight="fill"
+					/>
 				</Button>
 			) : null}
 			{layoutProbeEnabled ? (
@@ -303,11 +300,7 @@ function EditorModeFailure({ failed }: { failed: boolean }) {
 	) : null;
 }
 
-function EditorPanelBody(
-	props: EditorPanelBodyProps & {
-		refreshControl?: ReactElement<RefreshControlProps>;
-	},
-) {
+function EditorPanelBody(props: EditorPanelBodyProps) {
 	const {
 		compact,
 		contentProps,
@@ -316,7 +309,6 @@ function EditorPanelBody(
 		noteRead,
 		onScroll,
 		onScrollViewRef,
-		refreshControl,
 	} = props;
 	const themeStyles = useMobileStyles(createEditorPanelStyles);
 	const { panelStyles } = themeStyles;
@@ -352,7 +344,6 @@ function EditorPanelBody(
 			<ScrollView
 				contentContainerStyle={{ flexGrow: 1 }}
 				nestedScrollEnabled
-				refreshControl={refreshControl}
 				style={panelStyles.editorHost}
 				testID="editor-scroll"
 			>
@@ -366,7 +357,6 @@ function EditorPanelBody(
 			contentContainerStyle={readModeContentStyle(themeStyles, note, compact)}
 			onScroll={onScroll}
 			ref={onScrollViewRef}
-			refreshControl={refreshControl}
 			scrollEventThrottle={16}
 			style={panelStyles.editorHost}
 			testID="editor-scroll"

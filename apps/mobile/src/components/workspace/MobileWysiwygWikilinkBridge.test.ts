@@ -301,11 +301,52 @@ describe("native WYSIWYG wikilink bridge", () => {
 						type: "link",
 					},
 				],
-				text: "📅 2026-11-05 ⏰ 14:30",
+				text: "2026-11-05 14:30",
 				type: "text",
 			},
 			{ text: " ", type: "text" },
 		]);
+	});
+
+	it("inserts due badge into selected taskItem and replaces any existing due date and deletes previous emoji icons", () => {
+		const doc = documentNode(
+			paragraphNode("Intro"),
+			taskListNode(
+				taskItemNode("Task one"),
+				taskItemNode("Task two 📅"),
+				taskItemNode("Task three"),
+			),
+		);
+
+		const nextDocument = nativeWysiwygDocumentWithInsertedDue({
+			json: doc,
+			payload: { date: "2026-11-05", time: "16:00" },
+			selection: { from: 24, to: 24 },
+		});
+
+		expect(tiptapJsonToMobileMarkdown(nextDocument)).toBe(
+			[
+				"Intro",
+				"",
+				"- [ ] Task one",
+				"- [ ] Task two 📅 2026-11-05 ⏰ 16:00",
+				"- [ ] Task three",
+			].join("\n"),
+		);
+	});
+
+	it("inserts due badge into selected paragraph and deletes any typed previous emoji icon", () => {
+		const doc = documentNode(paragraphNode("Meeting 📅"));
+
+		const nextDocument = nativeWysiwygDocumentWithInsertedDue({
+			json: doc,
+			payload: { date: "2026-11-05", time: null },
+			selection: { from: 11, to: 11 },
+		});
+
+		expect(tiptapJsonToMobileMarkdown(nextDocument)).toBe(
+			"Meeting 📅 2026-11-05",
+		);
 	});
 
 	it("inserts due badge into selected taskItem and replaces any existing due date", () => {

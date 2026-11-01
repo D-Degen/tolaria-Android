@@ -20,7 +20,21 @@ describe("mobile TenTap editor CSS", () => {
 
 		expect(proseMirror).toContain("max-width: none;");
 		expect(proseMirror).toContain("margin: 0;");
-		expect(proseMirror).toContain("padding: 20px clamp(24px, 4vw, 72px) 96px;");
+		expect(proseMirror).toContain(
+			"padding: 20px clamp(24px, 4vw, 72px) 160px;",
+		);
+	});
+
+	it("maintains a 1-2 line keyboard scroll clearance above bottom edge", () => {
+		const css = mobileTentapEditorCss(false);
+		const rootScroll = cssBlock(css, "#root > div:first-child");
+		const blockScroll = cssBlock(
+			css,
+			".ProseMirror p, .ProseMirror h1, .ProseMirror h2, .ProseMirror h3, .ProseMirror h4, .ProseMirror h5, .ProseMirror h6, .ProseMirror li, .ProseMirror blockquote, .ProseMirror pre",
+		);
+
+		expect(rootScroll).toContain("scroll-padding-bottom: 46px;");
+		expect(blockScroll).toContain("scroll-margin-bottom: 46px;");
 	});
 
 	it("generates colored due badge styles with CalendarStar and Alarm SVG masks", () => {

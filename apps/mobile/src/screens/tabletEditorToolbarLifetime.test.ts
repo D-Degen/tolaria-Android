@@ -16,6 +16,7 @@ function Control({ children, testID, onPress }: SurfaceProps & { onPress?: () =>
 }
 vi.mock('react-native', () => ({ View: Surface, ScrollView: Surface,
   AppState: { addEventListener: vi.fn(() => ({ remove: vi.fn() })) },
+  Keyboard: { isVisible: () => false, addListener: vi.fn(() => ({ remove: vi.fn() })) },
   TextInput: ({ testID, ...props }: { testID?: string; [key: string]: unknown }) => createElement('input', { 'data-testid': testID, ...props }),
   StyleSheet: { create: (value: object) => value, flatten: (value: object) => value, hairlineWidth: 0.5 } }))
 vi.mock('../ui/theme/useMobileTheme', async () => {
@@ -24,8 +25,9 @@ vi.mock('../ui/theme/useMobileTheme', async () => {
   return { useMobileStyles: (factory: (colors: object, metrics: object) => object) => factory(mobilePalettes.light, mobileMetrics[1.2]),
     useMobileColors: () => mobilePalettes.light, useMobileMetrics: () => mobileMetrics[1.2] }
 })
+vi.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ bottom: 0, top: 0, left: 0, right: 0 }) }))
 vi.mock('phosphor-react-native', () => ({ Check: () => null, X: () => null, Code: () => null,
-  DotsThree: () => null, ListBullets: () => null, Star: () => null }))
+  DotsThree: () => null, ListBullets: () => null, Star: () => null, Sparkle: () => null }))
 vi.mock('../components/ui/button', () => ({ Button: Control }))
 vi.mock('../components/ui/text', () => ({ Text: ({ children, accessibilityRole }: {
   children?: ReactNode; accessibilityRole?: string

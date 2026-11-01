@@ -185,6 +185,7 @@ describe('applyMobileWorkspaceEdit', () => {
 
     expect(sidebarItems(archived, 'primary')).toEqual([
       expect.objectContaining({ count: '2', id: 'inbox' }),
+      expect.objectContaining({ count: '0', id: 'tasks' }),
       expect.objectContaining({ count: '2', id: 'all-notes' }),
       expect.objectContaining({ count: '1', id: 'archive' }),
     ])
@@ -241,6 +242,7 @@ describe('applyMobileWorkspaceEdit', () => {
     expect(organizedNote?.rawContent).toContain('_organized: true')
     expect(sidebarItems(result.snapshot, 'primary')).toEqual([
       expect.objectContaining({ count: '2', id: 'inbox' }),
+      expect.objectContaining({ count: '0', id: 'tasks' }),
       expect.objectContaining({ count: '3', id: 'all-notes' }),
       expect.objectContaining({ count: '0', id: 'archive' }),
     ])
@@ -294,6 +296,7 @@ describe('applyMobileWorkspaceEdit', () => {
     expect(snapshot.noteListSubtitle).toBe('0 open notes')
     expect(sidebarItems(snapshot, 'primary')).toEqual([
       expect.objectContaining({ count: '0', id: 'inbox' }),
+      expect.objectContaining({ count: '0', id: 'tasks' }),
       expect.objectContaining({ count: '2', id: 'all-notes' }),
       expect.objectContaining({ count: '1', id: 'archive' }),
     ])

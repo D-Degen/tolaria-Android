@@ -5,7 +5,7 @@ import { useMobileStyles } from "../ui/theme/useMobileTheme";
 import type { RegisterMobileEditorCommands } from "../workspace/mobileEditorCommands";
 import { mobileNoteIdForWikilinkTarget } from "../workspace/mobileWikilinks";
 import type { MobileNote } from "../workspace/mobileWorkspaceModel";
-import { PhoneBackButton, PhoneTopBar } from "./PhoneWorkspaceChrome";
+import { PhoneBackButton, PhonePropertiesButton, PhoneTopBar } from "./PhoneWorkspaceChrome";
 import type { PhoneWorkspaceEditorOptions } from "./phoneWorkspaceEditorOptions";
 import type {
 	PhoneTableOfContentsTargetRequest,
@@ -18,6 +18,7 @@ import { TabletEditorPanel } from "./TabletEditorPanel";
 type PhoneEditorBodyProps = {
 	controller: PhoneWorkspaceController;
 	leading?: ReactNode;
+	trailing?: ReactNode;
 	notes: MobileNote[];
 	onNavigateWikilink: (target: string) => void;
 	onRegisterEditorCommands?: RegisterMobileEditorCommands;
@@ -30,6 +31,7 @@ function PhoneEditorBody(props: PhoneEditorBodyProps) {
 	const {
 		controller,
 		leading,
+		trailing,
 		notes,
 		onNavigateWikilink,
 		onRegisterEditorCommands,
@@ -51,6 +53,7 @@ function PhoneEditorBody(props: PhoneEditorBodyProps) {
 			}
 			layoutProbe={options.layoutProbe}
 			leading={leading}
+			trailing={trailing}
 			note={controller.selectedNote}
 			noteRead={controller.selectedNoteRead}
 			notes={notes}
@@ -120,6 +123,7 @@ export function PhoneEditorScreen(props: PhoneWorkspaceStateViewProps) {
 		controller,
 		options,
 		openList,
+		openProperties,
 		onRegisterEditorCommands,
 		phoneLayoutProbe,
 		sourceModeRequest,
@@ -142,6 +146,11 @@ export function PhoneEditorScreen(props: PhoneWorkspaceStateViewProps) {
 			<PhoneEditorBody
 				controller={controller}
 				leading={<PhoneBackButton onBack={openList} />}
+				trailing={
+					controller.selectedNote ? (
+						<PhonePropertiesButton onOpenProperties={openProperties} />
+					) : undefined
+				}
 				notes={suggestionNotes}
 				onNavigateWikilink={handleNavigateWikilink}
 				onRegisterEditorCommands={onRegisterEditorCommands}

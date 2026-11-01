@@ -14,7 +14,7 @@ export default defineConfig({
     { find: /^react\/jsx-runtime$/, replacement: require.resolve('react/jsx-runtime') },
   ] },
   test: {
-    server: { deps: { inline: [/tentap-editor/] } },
+    server: { deps: { inline: [/tentap-editor/, /react-native-svg/, /react-native/] } },
     environment: 'node',
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     exclude: ['**/node_modules/**', 'src/qa/playwrightStartup.test.ts'],

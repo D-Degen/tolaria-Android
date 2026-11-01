@@ -21,6 +21,6 @@ for (const action of ['button', 'shortcut', 'command'] as const) {
     await source.fill('---\ntype: Note\n---\n\nA body without a title.')
     await phoneBack(page)
     await expect(page.getByTestId('phone-note-list-screen')).toBeVisible()
-    await expect(page.getByTestId('phone-note-list-screen').getByText('A body without a title.', { exact: true })).toBeVisible()
+    await expect(page.getByTestId('phone-note-list-screen').getByText('A body without a title.', { exact: true }).first()).toBeVisible()
   })
 }

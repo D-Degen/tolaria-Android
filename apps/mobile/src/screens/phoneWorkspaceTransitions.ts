@@ -5,6 +5,8 @@ export type PhoneWorkspaceTransitionDirection = 'fade' | 'fromLeft' | 'fromRight
 export const phoneWorkspaceTransitionDurationMs = 180
 export const phoneWorkspaceSidebarDrawerMaxWidth = 320
 export const phoneWorkspaceSidebarDrawerWidthRatio = 0.78
+export const phoneWorkspacePropertiesDrawerMaxWidth = 360
+export const phoneWorkspacePropertiesDrawerWidthRatio = 0.85
 
 const phoneStateOrder = {
   sidebar: 0,
@@ -63,6 +65,14 @@ export function phoneWorkspaceSidebarDrawerWidth(rootWidth: number): number {
   return Math.min(
     phoneWorkspaceSidebarDrawerMaxWidth,
     Math.round(rootWidth * phoneWorkspaceSidebarDrawerWidthRatio),
+  )
+}
+
+export function phoneWorkspacePropertiesDrawerWidth(rootWidth: number): number {
+  'worklet'
+  return Math.min(
+    phoneWorkspacePropertiesDrawerMaxWidth,
+    Math.round(rootWidth * phoneWorkspacePropertiesDrawerWidthRatio),
   )
 }
 

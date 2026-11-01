@@ -1,5 +1,18 @@
+import { useState, type ReactNode } from 'react'
 import { useMobileStyles, useMobileColors } from '../../ui/theme/useMobileTheme'
-import { Plus, WarningCircle } from 'phosphor-react-native'
+import {
+  CalendarBlank,
+  CaretDown,
+  CaretRight,
+  CircleIcon,
+  Clock,
+  Folder,
+  LinkSimple,
+  Plus,
+  Shapes,
+  Tag,
+  WarningCircle,
+} from 'phosphor-react-native'
 import { Pressable, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { mobileCopy, mobileText } from '../../i18n/mobileText'
@@ -155,6 +168,10 @@ function NoteProperties(props: NotePropertiesProps) {
   const relationshipSlots = mobileInspectorRelationshipSlots(note, typeDefinitions)
   const missingTypeName = resolveMobileMissingTypeName(note, typeDefinitions)
 
+  const [propertiesExpanded, setPropertiesExpanded] = useState(true)
+  const [relationshipsExpanded, setRelationshipsExpanded] = useState(true)
+  const [infoExpanded, setInfoExpanded] = useState(true)
+
   if (needsMobileFrontmatterNotice(frontmatterState)) {
     return (
       <>
@@ -173,25 +190,104 @@ function NoteProperties(props: NotePropertiesProps) {
     )
   }
 
+  const propertyCount = 1 + (note.status ? 1 : 0) + (note.tags?.length ? 1 : 0) + (note.properties?.length ?? 0)
+  const relationshipCount = (note.relationships?.length ?? 0) + (referenceGroups?.length ?? 0)
+
   return (
     <>
-      <StandardPropertyRows missingTypeName={missingTypeName} props={props} />
-      <CustomPropertyRows propertySlots={propertySlots} props={props} />
-      <PropertyActionRow label={mobileText('inspector.properties.addProperty')} layoutProbe={layoutProbe} layoutProbeId="properties.action.add-property" testID="property-action-add-property" onPress={() => props.onAddProperty()} />
-      <View style={propertyStyles.relationshipGroup} testID="properties-relationships-group">
-        <RelationshipPropertyRows relationshipSlots={relationshipSlots} props={props} />
-        <PropertyActionsAndReferences props={props} />
-      </View>
+      <PropertyAccordionSection
+        count={propertyCount}
+        expanded={propertiesExpanded}
+        testID="properties-accordion-properties"
+        title={mobileCopy.properties}
+        onToggle={() => setPropertiesExpanded((prev) => !prev)}
+      >
+        <StandardPropertyRows missingTypeName={missingTypeName} props={props} />
+        <CustomPropertyRows propertySlots={propertySlots} props={props} />
+        <PropertyActionRow
+          label={mobileText('inspector.properties.addProperty')}
+          layoutProbe={layoutProbe}
+          layoutProbeId="properties.action.add-property"
+          testID="property-action-add-property"
+          onPress={() => props.onAddProperty()}
+        />
+      </PropertyAccordionSection>
+
+      <PropertyAccordionSection
+        count={relationshipCount}
+        expanded={relationshipsExpanded}
+        testID="properties-accordion-relationships"
+        title={mobileText('mobile.properties.addRelationships')}
+        onToggle={() => setRelationshipsExpanded((prev) => !prev)}
+      >
+        <View style={propertyStyles.relationshipGroup} testID="properties-relationships-group">
+          <RelationshipPropertyRows relationshipSlots={relationshipSlots} props={props} />
+          <PropertyActionsAndReferences props={props} />
+        </View>
+      </PropertyAccordionSection>
+
+      <PropertyAccordionSection
+        expanded={infoExpanded}
+        testID="properties-accordion-info"
+        title={mobileText('inspector.info.title')}
+        onToggle={() => setInfoExpanded((prev) => !prev)}
+      >
+        <NoteInfoPropertyRows props={props} />
+      </PropertyAccordionSection>
     </>
+  )
+}
+
+function PropertyAccordionSection({
+  children,
+  count,
+  expanded,
+  onToggle,
+  testID,
+  title,
+}: {
+  children: ReactNode
+  count?: number
+  expanded: boolean
+  onToggle: () => void
+  testID?: string
+  title: string
+}) {
+  const themeStyles = useMobileStyles(createPropertyPanelStyles)
+  const mobileColors = useMobileColors()
+  const { propertyStyles } = themeStyles
+  const CaretIcon = expanded ? CaretDown : CaretRight
+
+  return (
+    <View style={propertyStyles.accordionSection} testID={testID}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded }}
+        style={propertyStyles.accordionHeader}
+        testID={testID ? `${testID}-header` : undefined}
+        onPress={onToggle}
+      >
+        <CaretIcon color={mobileColors.textMuted} size={12} weight="bold" />
+        <Text style={propertyStyles.accordionTitle}>{title}</Text>
+        {count !== undefined && count > 0 ? (
+          <View style={propertyStyles.accordionBadge}>
+            <Text style={propertyStyles.accordionBadgeText}>{count}</Text>
+          </View>
+        ) : null}
+      </Pressable>
+      {expanded ? <View style={propertyStyles.accordionBody}>{children}</View> : null}
+    </View>
   )
 }
 
 function StandardPropertyRows({ missingTypeName, props }: { missingTypeName: string | null; props: NotePropertiesProps }) {
   const { layoutProbe, note, onCreateMissingType, onEditProperty, onOpenChangeNoteType } = props
+  const mobileColors = useMobileColors()
 
   return (
     <>
       <TypePropertyRow
+        icon={<Shapes color={mobileColors.textMuted} size={14} />}
         layoutProbe={layoutProbe}
         missingTypeName={missingTypeName}
         note={note}
@@ -200,7 +296,10 @@ function StandardPropertyRows({ missingTypeName, props }: { missingTypeName: str
       />
       {note.status ? (
         <MobilePropertyRow
+          icon={<CircleIcon color={mobileColors.textMuted} size={14} />}
           label={mobileText('noteList.sort.status')}
+          layoutProbe={layoutProbe}
+          layoutProbeId="properties.row.status"
           testID="property-row-status"
           value={
             <EditableChipValue
@@ -210,22 +309,58 @@ function StandardPropertyRows({ missingTypeName, props }: { missingTypeName: str
               onPress={() => onEditProperty(note.id, 'Status', note.status)}
             />
           }
-          layoutProbe={layoutProbe}
-          layoutProbeId="properties.row.status"
         />
       ) : null}
-      <MobilePropertyRow label={mobileText('noteList.sort.created')} layoutProbe={layoutProbe} layoutProbeId="properties.row.created" testID="property-row-created" value={note.created} />
-      <MobilePropertyRow label={mobileCopy.modified} layoutProbe={layoutProbe} layoutProbeId="properties.row.modified" testID="property-row-modified" value={note.modified} />
       <MobilePropertyRow
+        icon={<Tag color={mobileColors.textMuted} size={14} />}
+        label="Tags"
+        layoutProbe={layoutProbe}
+        layoutProbeId="properties.section.tags"
+        testID="property-section-tags"
+        value={<EditableTagsValue labels={note.tags} onPress={() => onEditProperty(note.id, 'tags', note.tags)} />}
+      />
+    </>
+  )
+}
+
+function NoteInfoPropertyRows({ props }: { props: NotePropertiesProps }) {
+  const { layoutProbe, note } = props
+  const mobileColors = useMobileColors()
+
+  return (
+    <>
+      <MobilePropertyRow
+        icon={<CalendarBlank color={mobileColors.textMuted} size={14} />}
+        label={mobileText('noteList.sort.created')}
+        layoutProbe={layoutProbe}
+        layoutProbeId="properties.row.created"
+        testID="property-row-created"
+        value={note.created}
+      />
+      <MobilePropertyRow
+        icon={<Clock color={mobileColors.textMuted} size={14} />}
+        label={mobileCopy.modified}
+        layoutProbe={layoutProbe}
+        layoutProbeId="properties.row.modified"
+        testID="property-row-modified"
+        value={note.modified}
+      />
+      <MobilePropertyRow
+        icon={<Folder color={mobileColors.textMuted} size={14} />}
         label={mobileText('inspector.properties.workspace')}
         layoutProbe={layoutProbe}
         layoutProbeId="properties.row.workspace"
         testID="property-row-workspace"
         value={<WorkspaceBadge label={note.workspace} />}
       />
-      <MobilePropertyRow label="Tags" layoutProbe={layoutProbe} layoutProbeId="properties.section.tags" testID="property-section-tags"
-        value={<EditableTagsValue labels={note.tags} onPress={() => onEditProperty(note.id, 'tags', note.tags)} />} />
-      <MobilePropertyRow label="Links" layoutProbe={layoutProbe} layoutProbeId="properties.row.links" testID="property-row-links" value={`${note.links}`} />
+      <MobilePropertyRow
+        icon={<LinkSimple color={mobileColors.textMuted} size={14} />}
+        label="Links"
+        layoutProbe={layoutProbe}
+        layoutProbeId="properties.row.links"
+        testID="property-row-links"
+        value={`${note.links}`}
+      />
     </>
   )
 }
@@ -319,12 +454,14 @@ function PropertyActionsAndReferences({ props }: { props: NotePropertiesProps })
 }
 
 function TypePropertyRow({
+  icon,
   layoutProbe,
   missingTypeName,
   note,
   onCreateMissingType,
   onOpenChangeNoteType,
 }: {
+  icon?: ReactNode
   layoutProbe: MobileLayoutProbe
   missingTypeName: string | null
   note: MobileNote
@@ -335,6 +472,7 @@ function TypePropertyRow({
   const { typeStyles } = themeStyles
   return (
     <MobilePropertyRow
+      icon={icon}
       label="Type"
       testID="property-row-type"
       value={

@@ -1,4 +1,4 @@
-import { ArrowLeft, CaretLeft, List } from 'phosphor-react-native'
+import { ArrowLeft, CaretLeft, List, SlidersHorizontal } from 'phosphor-react-native'
 import { Platform, View } from 'react-native'
 import { Text } from '../components/ui/text'
 import { mobileText } from '../i18n/mobileText'
@@ -45,6 +45,19 @@ export function PhoneSidebarButton({ onOpenSidebar }: { onOpenSidebar: () => voi
       onPress={onOpenSidebar}
     >
       <List color={mobileColors.textMuted} size={18} />
+    </MobileIconButton>
+  )
+}
+
+export function PhonePropertiesButton({ onOpenProperties }: { onOpenProperties: () => void }) {
+  const { mobileColors } = useMobileStyles(createThemeStyles)
+  return (
+    <MobileIconButton
+      accessibilityLabel={mobileText('inspector.title.properties')}
+      testID="editor-properties-action"
+      onPress={onOpenProperties}
+    >
+      <SlidersHorizontal color={mobileColors.textMuted} size={18} />
     </MobileIconButton>
   )
 }

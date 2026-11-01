@@ -10,6 +10,7 @@ import { type MobileLayoutProbe, probeProps } from '../qa/mobileLayoutProbe'
 
 export function MobilePropertyRow({
   accessibilityLabel,
+  icon,
   label,
   layoutProbe,
   layoutProbeId,
@@ -18,6 +19,7 @@ export function MobilePropertyRow({
   value,
 }: {
   accessibilityLabel?: string
+  icon?: ReactNode
   label: string
   layoutProbe?: MobileLayoutProbe
   layoutProbeId?: string
@@ -32,13 +34,16 @@ export function MobilePropertyRow({
   const metricId = layoutProbeId ?? testID
   const content = (
     <>
-      <Text
-        {...propertyProbe(layoutProbe, metricId, 'label')}
-        style={[styles.label, stacked && styles.stackedLabel]}
-        testID={testID ? `${testID}-label` : undefined}
-      >
-        {label}
-      </Text>
+      <View style={[styles.labelSlot, stacked && styles.stackedLabelSlot]}>
+        {icon ? <View style={styles.iconContainer}>{icon}</View> : null}
+        <Text
+          {...propertyProbe(layoutProbe, metricId, 'label')}
+          style={[styles.label, stacked && styles.stackedLabel]}
+          testID={testID ? `${testID}-label` : undefined}
+        >
+          {label}
+        </Text>
+      </View>
       <View
         {...propertyProbe(layoutProbe, metricId, 'value')}
         style={[styles.value, stacked && styles.stackedValue]}
@@ -78,8 +83,20 @@ function propertyProbe(layoutProbe: MobileLayoutProbe | undefined, metricId: str
 function createThemeStyles(mobileColors: MobileColors, metrics: MobileMetrics) {
   const { property: desktopPropertyParity, space: mobileSpace, type: mobileType } = metrics
   const styles = StyleSheet.create({
+    labelSlot: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      gap: metrics.size(6),
+      width: 104,
+    },
+    iconContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: 16,
+      height: 16,
+    },
     label: {
-      width: 86,
+      flex: 1,
       color: mobileColors.textMuted,
       fontSize: desktopPropertyParity.labelTextSize,
     },
@@ -104,6 +121,9 @@ function createThemeStyles(mobileColors: MobileColors, metrics: MobileMetrics) {
       fontSize: mobileType.caption,
       fontWeight: '400',
       textAlign: 'right',
+    },
+    stackedLabelSlot: {
+      width: '100%',
     },
     stackedLabel: {
       width: '100%',

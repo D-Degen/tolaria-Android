@@ -145,6 +145,7 @@ type: Project
 
     expect(snapshot.sidebarSections.find((section) => section.id === 'primary')?.items).toEqual([
       expect.objectContaining({ count: '1', id: 'inbox' }),
+      expect.objectContaining({ count: '0', id: 'tasks' }),
       expect.objectContaining({ count: '1', id: 'all-notes' }),
       expect.objectContaining({ count: '0', id: 'archive' }),
     ])
@@ -179,6 +180,7 @@ type: Project
 
     expect(snapshot.sidebarSections.find((section) => section.id === 'primary')?.items).toEqual([
       expect.objectContaining({ count: '1', id: 'inbox' }),
+      expect.objectContaining({ count: '0', id: 'tasks' }),
       expect.objectContaining({ count: '3', id: 'all-notes' }),
       expect.objectContaining({ count: '0', id: 'archive' }),
     ])

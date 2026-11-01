@@ -244,6 +244,40 @@ function createActionStyles(mobileColors: MobileColors, metrics: MobileMetrics) 
 function createSectionStyles(mobileColors: MobileColors, metrics: MobileMetrics) {
   const { property: desktopPropertyParity, space: mobileSpace } = metrics
   return StyleSheet.create({
+    accordionBadge: {
+      alignItems: 'center',
+      backgroundColor: mobileColors.control,
+      borderRadius: mobileRadius.pill,
+      justifyContent: 'center',
+      paddingHorizontal: metrics.size(6),
+      paddingVertical: metrics.size(1),
+    },
+    accordionBadgeText: {
+      color: mobileColors.textMuted,
+      fontSize: metrics.size(10),
+      fontWeight: '600',
+    },
+    accordionBody: {
+      width: '100%',
+    },
+    accordionHeader: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      gap: mobileSpace.xs,
+      paddingHorizontal: desktopPropertyParity.rowPaddingHorizontal,
+      paddingVertical: metrics.size(7),
+    },
+    accordionSection: {
+      marginBottom: mobileSpace.xs,
+    },
+    accordionTitle: {
+      color: mobileColors.textMuted,
+      flex: 1,
+      fontSize: metrics.size(11),
+      fontWeight: '600',
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+    },
     relationshipGroup: {
       marginTop: mobileSpace.sm,
       paddingTop: mobileSpace.sm,

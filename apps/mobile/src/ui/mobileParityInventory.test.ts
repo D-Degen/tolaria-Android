@@ -41,7 +41,7 @@ function modulesWithPrefix(prefix: string, modules: Record<string, unknown>) {
   return Object.fromEntries(
     Object.keys(modules)
       .map((path) => `${prefix}${fileNameFromPath(path)}`)
-      .filter((path) => !path.includes('Mock'))
+      .filter((path) => !path.includes('Mock') && !path.includes('.test.') && !path.includes('.spec.'))
       .map((path) => [path, true]),
   )
 }

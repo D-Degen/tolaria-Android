@@ -52,6 +52,7 @@ describe('mobile editing parity inventory', () => {
       'setDefaultNoteWidth',
       'setOrganized',
       'toggleFavorite',
+      'updateChecklistItem',
       'updateNoteContent',
       'updatePrimaryNoteListProperties',
       'updateProperty',

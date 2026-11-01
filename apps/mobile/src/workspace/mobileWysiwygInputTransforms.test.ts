@@ -70,16 +70,38 @@ describe("native WYSIWYG input transforms", () => {
 		expect(tiptapJsonToMobileMarkdown(nextDocument)).toBe(
 			"Meeting 📅 2026-11-05",
 		);
-		const marks = nextDocument?.content?.[0]?.content?.flatMap(
-			(c) => c.marks ?? [],
-		);
-		expect(
-			marks?.some(
+		const badgeNode = nextDocument?.content?.[0]?.content?.find((c) =>
+			c.marks?.some(
 				(m) =>
 					m.type === "link" &&
-					m.attrs?.href === "tolaria://due?date=2026-11-05",
+					typeof m.attrs?.href === "string" &&
+					m.attrs.href.startsWith("tolaria://due"),
 			),
-		).toBe(true);
+		);
+		expect(badgeNode).toBeDefined();
+		// The previous calendar emoji is deleted from the badge display text
+		expect(badgeNode?.text).toBe("2026-11-05");
+	});
+
+	it("turns typed due date with time into a badge without emoji icons", () => {
+		const nextDocument = nativeWysiwygDocumentWithInputTransforms({
+			json: documentNode(paragraphNode("Meeting 📅 2026-11-05 ⏰ 14:00 ")),
+			selection: { from: 31, to: 31 },
+		});
+
+		expect(tiptapJsonToMobileMarkdown(nextDocument)).toBe(
+			"Meeting 📅 2026-11-05 ⏰ 14:00",
+		);
+		const badgeNode = nextDocument?.content?.[0]?.content?.find((c) =>
+			c.marks?.some(
+				(m) =>
+					m.type === "link" &&
+					typeof m.attrs?.href === "string" &&
+					m.attrs.href.startsWith("tolaria://due"),
+			),
+		);
+		expect(badgeNode).toBeDefined();
+		expect(badgeNode?.text).toBe("2026-11-05 14:00");
 	});
 
 	it("waits for trailing whitespace before replacing completed inline math", () => {

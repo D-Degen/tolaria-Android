@@ -120,7 +120,7 @@ export function nativeWysiwygDueBadgeNode(
 	date: string,
 	time?: string | null,
 ): TiptapJsonNode {
-	const rawText = time ? `📅 ${date} ⏰ ${time}` : `📅 ${date}`;
+	const rawText = time ? `${date} ${time}` : `${date}`;
 	const href = `tolaria://due?date=${date}${time ? `&time=${encodeURIComponent(time)}` : ""}`;
 	return {
 		marks: [
@@ -174,7 +174,7 @@ function cleanExistingDueFromInlineNodes(
 	nodes: TiptapJsonNode[],
 ): TiptapJsonNode[] {
 	const dueRegex =
-		/(?:📅|🗓️)\s*(?:\d{4}-\d{2}-\d{2}|\d{1,2}\.\d{1,2}\.\d{4})(?:\s*(?:⏰|\bum\s*|\bat\s*)?\s*[012]?\d:[0-5]\d)?/gu;
+		/\s*(?:(?:📅|🗓️)\s*(?:\d{4}-\d{2}-\d{2}|\d{1,2}\.\d{1,2}\.\d{4})(?:\s*(?:⏰|\bum\s*|\bat\s*)?\s*[012]?\d:[0-5]\d)?|(?:📅|🗓️|⏰))\s*/gu;
 	const result: TiptapJsonNode[] = [];
 	for (const node of nodes) {
 		if (
@@ -200,6 +200,61 @@ function cleanExistingDueFromInlineNodes(
 		}
 	}
 	return result;
+}
+
+function cleanTrailingDueMarkerFromNodes(
+	nodes: TiptapJsonNode[],
+): TiptapJsonNode[] {
+	if (nodes.length === 0) return nodes;
+	const lastIndex = nodes.length - 1;
+	const last = nodes[lastIndex];
+	if (typeof last.text === "string") {
+		const cleaned = last.text.replace(/\s*(?:📅|🗓️|⏰)\s*$/u, "");
+		if (cleaned !== last.text) {
+			const updated = [...nodes];
+			if (cleaned.length > 0) {
+				updated[lastIndex] = { ...last, text: cleaned };
+			} else {
+				updated.splice(lastIndex, 1);
+			}
+			return updated;
+		}
+	}
+	return nodes;
+}
+
+function insertDueIntoInlineContainer(
+	node: TiptapJsonNode,
+	dueContent: TiptapJsonNode[],
+	selection: NativeWysiwygSelection,
+	contentStart: number,
+): NativeWysiwygInsertionResult {
+	const rawNodes = node.content ?? [];
+	const contextualContent = inlineContentForSelection(
+		rawNodes,
+		dueContent,
+		selection,
+		contentStart,
+	);
+	const beforeNodes = cleanTrailingDueMarkerFromNodes(
+		inlineNodesBefore(rawNodes, selection.from, contentStart),
+	);
+	return {
+		inserted: true,
+		node: {
+			...node,
+			content: [
+				...beforeNodes,
+				...contextualContent.map(cloneNode),
+				...inlineNodesAfter(
+					rawNodes,
+					contextualContent,
+					selection.to,
+					contentStart,
+				),
+			],
+		},
+	};
 }
 
 function insertDueIntoTaskItem(
@@ -264,7 +319,7 @@ function insertDueAtSelection(
 			cloneNode(badgeNode),
 			{ text: " ", type: "text" },
 		];
-		return insertWikilinkIntoInlineContainer(
+		return insertDueIntoInlineContainer(
 			node,
 			dueContent,
 			selection,

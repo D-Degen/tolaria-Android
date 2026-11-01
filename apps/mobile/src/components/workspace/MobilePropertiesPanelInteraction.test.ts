@@ -21,7 +21,20 @@ const layout = vi.hoisted(() => ({ device: 'tablet' }))
 vi.mock('react-native', () => ({ View: Surface, ScrollView: Surface, Pressable: Control,
   StyleSheet: { create: (styles: object) => styles, hairlineWidth: 0.5 } }))
 vi.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ bottom: 0 }) }))
-vi.mock('phosphor-react-native', () => ({ Plus: () => createElement('span', { 'data-plus': true }, '+'), X: () => null, WarningCircle: () => null }))
+vi.mock('phosphor-react-native', () => ({
+  Plus: () => createElement('span', { 'data-plus': true }, '+'),
+  X: () => null,
+  WarningCircle: () => null,
+  CaretDown: () => null,
+  CaretRight: () => null,
+  Shapes: () => null,
+  Circle: () => null,
+  Tag: () => null,
+  CalendarBlank: () => null,
+  Clock: () => null,
+  Folder: () => null,
+  LinkSimple: () => null,
+}))
 vi.mock('../../ui/theme/useMobileTheme', () => ({ useMobileColors: () => mobilePalettes.light,
   useMobileStyles: (factory: (colors: typeof mobilePalettes.light, metrics: typeof mobileMetrics[1.2]) => object) => factory(mobilePalettes.light, mobileMetrics[1.2]) }))
 vi.mock('../../ui/useMobileDeviceLayout', () => ({ useMobileDeviceLayout: () => layout.device }))

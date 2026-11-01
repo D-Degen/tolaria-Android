@@ -14,7 +14,7 @@ import { PhoneEditorScreen } from './PhoneWorkspaceEditorScreen'
 import { PhoneSidebarButton, PhoneTopBar } from './PhoneWorkspaceChrome'
 import { createThemeStyles } from './phoneWorkspaceStyles'
 import type { PhoneWorkspaceStateViewProps, PhoneWorkspaceController } from './phoneWorkspaceScreenSupport'
-import { phoneWorkspaceSidebarDrawerWidth } from './phoneWorkspaceTransitions'
+import { phoneWorkspacePropertiesDrawerWidth, phoneWorkspaceSidebarDrawerWidth } from './phoneWorkspaceTransitions'
 import { phoneRailFrame } from './phonePanelRail'
 import { useMobileInspectorReferenceGroups } from './useMobileInspectorReferenceGroups'
 import { usePhoneViewportWidth } from './usePhoneViewportWidth'
@@ -142,31 +142,42 @@ function PhonePropertiesScreen(props: PhoneWorkspaceStateViewProps) {
   const title = controller.selectedNote
     ? noteFilename(noteWritePath(controller.selectedNote))
     : mobileText('inspector.title.properties')
+  const width = usePhoneViewportWidth()
+  const drawerWidth = phoneWorkspacePropertiesDrawerWidth(width)
 
   return (
-    <View {...probeProps(phoneLayoutProbe, 'phone.properties.screen')} style={styles.screen} testID="phone-properties-screen">
-      <PhoneTopBar title={title} onBack={returnToEditor} />
-      <MobilePropertiesPanel
-        compact
-        fullWidth
-        showToolbar={false}
-        layoutProbe={options.layoutProbe}
-        note={controller.selectedNote}
-        typeDefinitions={controller.snapshot.typeDefinitions}
-        onAddProperty={controller.onAddProperty}
-        onAddRelationship={controller.onAddRelationship}
-        onDeleteProperty={controller.onDeleteProperty}
-        onEditProperty={controller.onEditProperty}
-        onEnterNeighborhood={enterNeighborhood}
-        onFixInvalidFrontmatter={openSourceEditor}
-        onInitializeProperties={controller.onInitializeProperties}
-        onCreateMissingType={controller.onOpenCreateTypeWithName}
-        onOpenChangeNoteType={controller.onOpenChangeNoteType}
-        onRemoveRelationship={controller.onRemoveRelationship}
-        propertyDisplayModes={controller.snapshot.vaultConfig?.propertyDisplayModes}
-        referenceGroups={referenceGroups}
-        onSelectNote={openEditor}
+    <View {...probeProps(phoneLayoutProbe, 'phone.properties.screen')} style={styles.propertiesDrawerRoot} testID="phone-properties-screen">
+      <Pressable
+        accessibilityLabel={mobileText('window.close')}
+        accessibilityRole="button"
+        style={styles.drawerScrim}
+        testID="phone-properties-scrim"
+        onPress={returnToEditor}
       />
+      <View {...probeProps(phoneLayoutProbe, 'phone.properties.drawer')} style={[styles.propertiesDrawerPanel, { width: drawerWidth }]}>
+        <PhoneTopBar title={title} onBack={returnToEditor} />
+        <MobilePropertiesPanel
+          compact
+          fullWidth
+          showToolbar={false}
+          layoutProbe={options.layoutProbe}
+          note={controller.selectedNote}
+          typeDefinitions={controller.snapshot.typeDefinitions}
+          onAddProperty={controller.onAddProperty}
+          onAddRelationship={controller.onAddRelationship}
+          onDeleteProperty={controller.onDeleteProperty}
+          onEditProperty={controller.onEditProperty}
+          onEnterNeighborhood={enterNeighborhood}
+          onFixInvalidFrontmatter={openSourceEditor}
+          onInitializeProperties={controller.onInitializeProperties}
+          onCreateMissingType={controller.onOpenCreateTypeWithName}
+          onOpenChangeNoteType={controller.onOpenChangeNoteType}
+          onRemoveRelationship={controller.onRemoveRelationship}
+          propertyDisplayModes={controller.snapshot.vaultConfig?.propertyDisplayModes}
+          referenceGroups={referenceGroups}
+          onSelectNote={openEditor}
+        />
+      </View>
     </View>
   )
 }

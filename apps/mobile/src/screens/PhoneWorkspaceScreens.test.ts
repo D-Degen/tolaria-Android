@@ -17,6 +17,7 @@ vi.mock('../components/workspace/MobileNoteListPanel', () => ({ MobileNoteListPa
   calls.list(props)
   return createElement('div', { 'data-testid': 'phone-test-note-list' }, props.leading as ReactNode)
 } }))
+vi.mock('../components/workspace/MobileTaskListPanel', () => ({ MobileTaskListPanel: () => null }))
 vi.mock('../components/workspace/MobilePropertiesPanel', () => ({ MobilePropertiesPanel: () => {
   calls.properties()
   return null
@@ -32,6 +33,8 @@ vi.mock('./PhoneScreenLayer', () => ({ PhoneScreenLayer: ({ children }: { childr
 vi.mock('./PhoneWorkspaceChrome', () => ({
   PhoneBackButton: ({ onBack }: { onBack?: () => void }) =>
     createElement('button', { type: 'button', 'data-testid': 'phone-back-action', onClick: onBack }),
+  PhonePropertiesButton: ({ onOpenProperties }: { onOpenProperties?: () => void }) =>
+    createElement('button', { type: 'button', 'data-testid': 'editor-properties-action', onClick: onOpenProperties }),
   PhoneSidebarButton: ({ onOpenSidebar }: { onOpenSidebar?: () => void }) =>
     createElement('button', { type: 'button', 'data-testid': 'phone-sidebar-action', onClick: onOpenSidebar }),
   PhoneTopBar: ({ children }: { children?: ReactNode }) => createElement('header', null, children),
@@ -82,13 +85,17 @@ it('provides native Android navigation controls: hamburger menu in list, back bu
 
   // Leading back button in editor
   expect(calls.editor.mock.lastCall?.[0].leading).toBeDefined()
-  expect(calls.editor.mock.lastCall?.[0].trailing).toBeUndefined()
 
   // Scrim in sidebar drawer
   const scrim = host.querySelector<HTMLButtonElement>('[data-testid="phone-sidebar-scrim"]')
   expect(scrim).not.toBeNull()
   await act(async () => scrim?.click())
   expect(openList).toHaveBeenCalledOnce()
+
+  // Scrim in properties slide-over drawer
+  const propertiesScrim = host.querySelector<HTMLButtonElement>('[data-testid="phone-properties-scrim"]')
+  expect(propertiesScrim).not.toBeNull()
+  await act(async () => propertiesScrim?.click())
 
   expect(calls.properties).toHaveBeenCalledOnce()
 })

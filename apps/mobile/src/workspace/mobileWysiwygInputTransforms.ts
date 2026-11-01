@@ -152,7 +152,7 @@ function completedDueBadgeTransform({
 	const time = rawTime ? rawTime.trim() : null;
 	const matchStart = candidate.length - fullMatch.length;
 	const href = `tolaria://due?date=${date}${time ? `&time=${encodeURIComponent(time)}` : ""}`;
-	const rawText = time ? `📅 ${date} ⏰ ${time}` : `📅 ${date}`;
+	const rawText = time ? `${date} ${time}` : `${date}`;
 
 	const badgeNode: TiptapJsonNode = {
 		marks: [{ attrs: { class: "tolaria-due-badge", href }, type: "link" }],
