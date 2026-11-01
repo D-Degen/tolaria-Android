@@ -160,6 +160,10 @@ export type MobileSyncStatus = {
 export type MobileEditorInline = {
 	bold?: boolean;
 	code?: boolean;
+	due?: {
+		date: string;
+		time?: string;
+	};
 	italic?: boolean;
 	linkHref?: string;
 	strike?: boolean;
