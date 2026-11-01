@@ -17,6 +17,13 @@ export type NativeSmartNotesModule = {
   generateStructuredNote?(text: string, availableTypes: string[]): Promise<string>
   consumeSharedText?(): Promise<string | null>
   recognizeSpeech?(): Promise<string | null>
+  startVoiceRecording?(): Promise<boolean>
+  stopVoiceRecording?(): Promise<string | null>
+  cancelVoiceRecording?(): Promise<null>
+  addListener?(
+    eventName: 'onSpeechRmsChanged' | 'onSpeechPartialResult',
+    listener: (event: { rms?: number; text?: string }) => void,
+  ): { remove: () => void }
 }
 
 export function optionalNativeSmartNotesModule(): NativeSmartNotesModule | null {

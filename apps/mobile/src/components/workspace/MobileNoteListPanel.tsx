@@ -1,5 +1,5 @@
 import { MagnifyingGlass } from 'phosphor-react-native'
-import { type ReactElement, type ReactNode, useMemo } from 'react'
+import { type ReactElement, type ReactNode, useMemo, useState } from 'react'
 import { FlatList, type RefreshControlProps, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { mobileCopy, mobileText } from '../../i18n/mobileText'
@@ -25,6 +25,7 @@ import { useMobilePullToSync } from '../../workspace/useMobilePullToSync'
 import { Button } from '../ui/button'
 import { Text } from '../ui/text'
 import { MobileCreateNoteButton } from './MobileCreateNoteButton'
+import { MobileVoiceRecordingBar } from './MobileVoiceRecordingBar'
 import { MobileNoteListBulkActionBar } from './MobileNoteListBulkActionBar'
 import {
   MobileNoteListRow,
@@ -69,6 +70,12 @@ type MobileNoteListPanelProps = {
   notes: MobileNote[]
   onOpenCreateNote: () => void
   onOpenSmartCreateNote?: () => void
+  onCreateSmartNote?: (draft: {
+    title: string
+    type: string
+    tags: string[]
+    markdownBody: string
+  }) => void
   onOpenSearch: () => void
   onOpenVault?: () => void
   onNoteListFilterChange?: (filter: MobileNoteListFilter) => void
@@ -113,6 +120,7 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
     typeDefinitions,
   } = props
   const onFilterChange = noteListFilterAction(props)
+  const [voiceRecordingActive, setVoiceRecordingActive] = useState(false)
   const isInbox = props.isInbox ?? (props.activeItemId === 'inbox' || title === mobileCopy.inbox || title === 'Inbox')
   const activeNoteId = selectedNoteId ?? notes[0]?.id ?? null
   const layoutProbe = useMobileLayoutProbe(layoutProbeEnabled)
@@ -175,10 +183,23 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
           typeDefinitions={typeDefinitions}
         />
         <MobileCreateNoteButton
-          visible={showCreateAction && bulkSelection.selectedNotes.length === 0}
+          visible={showCreateAction && bulkSelection.selectedNotes.length === 0 && !voiceRecordingActive}
           onLongPress={onOpenSmartCreateNote}
           onPress={onOpenCreateNote}
-          onSmartVoicePress={onOpenSmartCreateNote}
+          onSmartVoicePress={() => setVoiceRecordingActive(true)}
+        />
+        <MobileVoiceRecordingBar
+          availableTypes={typeDefinitions ? Object.keys(typeDefinitions) : ['Note']}
+          visible={voiceRecordingActive}
+          onClose={() => setVoiceRecordingActive(false)}
+          onCreateSmartNote={(draft) => {
+            setVoiceRecordingActive(false)
+            if (props.onCreateSmartNote) {
+              props.onCreateSmartNote(draft)
+            } else {
+              props.onOpenCreateNote()
+            }
+          }}
         />
       </View>
       <BulkSelectionBar bulkActions={bulkActions} bulkSelection={bulkSelection} />

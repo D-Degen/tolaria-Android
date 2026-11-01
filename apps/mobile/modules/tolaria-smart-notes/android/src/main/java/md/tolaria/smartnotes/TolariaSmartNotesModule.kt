@@ -24,6 +24,18 @@ class TolariaSmartNotesModule : Module() {
   private val mainHandler = Handler(Looper.getMainLooper())
   private val speechTimeoutRunnable = Runnable { finishSpeech(null) }
 
+  // Continuous WhatsApp-style voice recording state
+  @Volatile
+  private var isContinuousRecording = false
+  private val accumulatedSpeech = StringBuilder()
+  @Volatile
+  private var pendingStopPromise: Promise? = null
+  private var continuousRecognizer: SpeechRecognizer? = null
+  private var continuousIntent: Intent? = null
+  private val stopSafetyTimeoutRunnable = Runnable {
+    resolvePendingStop()
+  }
+
   private fun finishSpeech(result: String?) {
     mainHandler.post {
       mainHandler.removeCallbacks(speechTimeoutRunnable)
@@ -40,11 +52,147 @@ class TolariaSmartNotesModule : Module() {
     }
   }
 
+  private fun resolvePendingStop() {
+    mainHandler.post {
+      mainHandler.removeCallbacks(stopSafetyTimeoutRunnable)
+      val text = accumulatedSpeech.toString().trim()
+      val p = pendingStopPromise
+      pendingStopPromise = null
+      cleanupContinuousRecognizer()
+      p?.resolve(if (text.isNotEmpty()) text else null)
+    }
+  }
+
+  private fun cleanupContinuousRecognizer() {
+    mainHandler.post {
+      try {
+        continuousRecognizer?.stopListening()
+        continuousRecognizer?.cancel()
+        continuousRecognizer?.destroy()
+      } catch (_: Throwable) {}
+      continuousRecognizer = null
+      continuousIntent = null
+    }
+  }
+
+  private fun startContinuousListeningInternal(activity: Activity) {
+    mainHandler.post {
+      if (!isContinuousRecording) return@post
+      try {
+        continuousRecognizer?.destroy()
+      } catch (_: Throwable) {}
+
+      val recognizer = SpeechRecognizer.createSpeechRecognizer(activity)
+      continuousRecognizer = recognizer
+
+      val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+        putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+        putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
+        putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+      }
+      continuousIntent = intent
+
+      recognizer.setRecognitionListener(object : RecognitionListener {
+        override fun onReadyForSpeech(params: Bundle?) {}
+        override fun onBeginningOfSpeech() {}
+        override fun onBufferReceived(buffer: ByteArray?) {}
+        override fun onEndOfSpeech() {}
+
+        override fun onRmsChanged(rmsdB: Float) {
+          if (isContinuousRecording) {
+            try {
+              this@TolariaSmartNotesModule.sendEvent(
+                "onSpeechRmsChanged",
+                mapOf("rms" to rmsdB.toDouble())
+              )
+            } catch (_: Throwable) {}
+          }
+        }
+
+        override fun onPartialResults(partialResults: Bundle?) {
+          if (!isContinuousRecording) return
+          val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+          val partial = matches?.firstOrNull()?.trim()
+          if (!partial.isNullOrEmpty()) {
+            val combined = if (accumulatedSpeech.isNotEmpty()) {
+              "${accumulatedSpeech.toString()} $partial"
+            } else {
+              partial
+            }
+            try {
+              this@TolariaSmartNotesModule.sendEvent(
+                "onSpeechPartialResult",
+                mapOf("text" to combined)
+              )
+            } catch (_: Throwable) {}
+          }
+        }
+
+        override fun onResults(results: Bundle?) {
+          val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+          val spoken = matches?.firstOrNull()?.trim()
+          if (!spoken.isNullOrEmpty()) {
+            if (accumulatedSpeech.isNotEmpty()) {
+              accumulatedSpeech.append(" ")
+            }
+            accumulatedSpeech.append(spoken)
+            try {
+              this@TolariaSmartNotesModule.sendEvent(
+                "onSpeechPartialResult",
+                mapOf("text" to accumulatedSpeech.toString().trim())
+              )
+            } catch (_: Throwable) {}
+          }
+
+          if (isContinuousRecording) {
+            mainHandler.postDelayed({
+              if (isContinuousRecording && continuousRecognizer != null && continuousIntent != null) {
+                try {
+                  continuousRecognizer?.startListening(continuousIntent)
+                } catch (_: Throwable) {
+                  startContinuousListeningInternal(activity)
+                }
+              }
+            }, 60)
+          } else {
+            resolvePendingStop()
+          }
+        }
+
+        override fun onError(error: Int) {
+          if (isContinuousRecording) {
+            // Seamless restart on pause timeouts
+            mainHandler.postDelayed({
+              if (isContinuousRecording) {
+                try {
+                  continuousRecognizer?.cancel()
+                  continuousRecognizer?.startListening(continuousIntent)
+                } catch (_: Throwable) {
+                  startContinuousListeningInternal(activity)
+                }
+              }
+            }, 100)
+          } else {
+            resolvePendingStop()
+          }
+        }
+
+        override fun onEvent(eventType: Int, params: Bundle?) {}
+      })
+
+      recognizer.startListening(intent)
+    }
+  }
+
   override fun definition() = ModuleDefinition {
     Name("TolariaSmartNotes")
+    Events("onSpeechRmsChanged", "onSpeechPartialResult")
 
     OnDestroy {
       finishSpeech(null)
+      isContinuousRecording = false
+      cleanupContinuousRecognizer()
     }
 
     OnActivityResult { _, payload ->
@@ -194,6 +342,62 @@ class TolariaSmartNotesModule : Module() {
         } catch (e: Throwable) {
           finishSpeech(null)
         }
+      }
+    }
+
+    AsyncFunction("startVoiceRecording") { promise: Promise ->
+      val activity = appContext.currentActivity
+      if (activity == null) {
+        promise.resolve(false)
+        return@AsyncFunction
+      }
+
+      val hasAudioPermission = ContextCompat.checkSelfPermission(
+        activity,
+        Manifest.permission.RECORD_AUDIO
+      ) == PackageManager.PERMISSION_GRANTED
+
+      if (!hasAudioPermission || !SpeechRecognizer.isRecognitionAvailable(activity)) {
+        promise.resolve(false)
+        return@AsyncFunction
+      }
+
+      mainHandler.post {
+        isContinuousRecording = true
+        accumulatedSpeech.setLength(0)
+        startContinuousListeningInternal(activity)
+        promise.resolve(true)
+      }
+    }
+
+    AsyncFunction("stopVoiceRecording") { promise: Promise ->
+      mainHandler.post {
+        if (!isContinuousRecording && continuousRecognizer == null) {
+          val current = accumulatedSpeech.toString().trim()
+          promise.resolve(if (current.isNotEmpty()) current else null)
+          return@post
+        }
+        isContinuousRecording = false
+        pendingStopPromise = promise
+        mainHandler.postDelayed(stopSafetyTimeoutRunnable, 800)
+        try {
+          continuousRecognizer?.stopListening()
+        } catch (_: Throwable) {
+          resolvePendingStop()
+        }
+      }
+    }
+
+    AsyncFunction("cancelVoiceRecording") { promise: Promise ->
+      mainHandler.post {
+        isContinuousRecording = false
+        accumulatedSpeech.setLength(0)
+        mainHandler.removeCallbacks(stopSafetyTimeoutRunnable)
+        val p = pendingStopPromise
+        pendingStopPromise = null
+        p?.resolve(null)
+        cleanupContinuousRecognizer()
+        promise.resolve(null)
       }
     }
   }

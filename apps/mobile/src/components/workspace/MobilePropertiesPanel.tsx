@@ -11,7 +11,6 @@ import {
   Clock,
   Code,
   Copy,
-  FilePdf,
   Folder,
   LinkSimple,
   ListBullets,
@@ -577,8 +576,7 @@ function NoteInfoPropertyRows({ props }: { props: NotePropertiesProps }) {
         />
       ) : null}
       {onCopyDeepLink ? (
-        <MobilePropertyRow
-          icon={<LinkSimple color={mobileColors.textMuted} size={14} />}
+        <PropertyActionRow
           label={mobileText('command.note.copyDeepLink')}
           layoutProbe={layoutProbe}
           layoutProbeId="properties.action.copy-deep-link"
@@ -587,8 +585,7 @@ function NoteInfoPropertyRows({ props }: { props: NotePropertiesProps }) {
         />
       ) : null}
       {onExportNoteAsPdf ? (
-        <MobilePropertyRow
-          icon={<FilePdf color={mobileColors.textMuted} size={14} />}
+        <PropertyActionRow
           label={mobileText('command.note.exportPdf')}
           layoutProbe={layoutProbe}
           layoutProbeId="properties.action.export-pdf"

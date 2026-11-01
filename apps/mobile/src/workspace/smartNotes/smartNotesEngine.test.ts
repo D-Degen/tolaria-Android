@@ -7,6 +7,11 @@ import {
   localSuggestType,
   requestAutoStartVoiceInput,
   takePendingAutoStartVoiceInput,
+  startVoiceRecordingSession,
+  stopVoiceRecordingSession,
+  cancelVoiceRecordingSession,
+  subscribeVoiceRecordingRms,
+  subscribeVoiceRecordingPartial,
 } from './smartNotesEngine'
 
 describe('smartNotesEngine', () => {
@@ -102,5 +107,24 @@ Aufgabe: Dokumentation für Nutzer ergänzen`
     requestAutoStartVoiceInput()
     expect(takePendingAutoStartVoiceInput()).toBe(true)
     expect(takePendingAutoStartVoiceInput()).toBe(false)
+  })
+
+  it('safely handles continuous voice recording session lifecycle when native module is unavailable or mocked', async () => {
+    // In node test environment without Android runtime, start returns false safely
+    const started = await startVoiceRecordingSession()
+    expect(typeof started).toBe('boolean')
+
+    const stopped = await stopVoiceRecordingSession()
+    expect(stopped).toBeNull()
+
+    await expect(cancelVoiceRecordingSession()).resolves.toBeUndefined()
+
+    const unsubRms = subscribeVoiceRecordingRms(() => {})
+    expect(typeof unsubRms).toBe('function')
+    unsubRms()
+
+    const unsubPartial = subscribeVoiceRecordingPartial(() => {})
+    expect(typeof unsubPartial).toBe('function')
+    unsubPartial()
   })
 })

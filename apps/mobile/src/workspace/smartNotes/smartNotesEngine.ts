@@ -61,6 +61,89 @@ export async function startNativeVoiceRecognition(): Promise<string | null> {
 	}
 }
 
+export async function startVoiceRecordingSession(): Promise<boolean> {
+	const granted = await ensureAudioRecordingPermission();
+	if (!granted) return false;
+	const native = optionalNativeSmartNotesModule();
+	if (native?.startVoiceRecording) {
+		try {
+			return await native.startVoiceRecording();
+		} catch {
+			return false;
+		}
+	}
+	return false;
+}
+
+export async function stopVoiceRecordingSession(): Promise<string | null> {
+	const native = optionalNativeSmartNotesModule();
+	if (native?.stopVoiceRecording) {
+		try {
+			const res = await native.stopVoiceRecording();
+			const trimmed = res?.trim() ?? "";
+			return trimmed.length > 0 ? trimmed : null;
+		} catch {
+			return null;
+		}
+	}
+	return null;
+}
+
+export async function cancelVoiceRecordingSession(): Promise<void> {
+	const native = optionalNativeSmartNotesModule();
+	if (native?.cancelVoiceRecording) {
+		try {
+			await native.cancelVoiceRecording();
+		} catch {
+			// Ignore cancel errors
+		}
+	}
+}
+
+export function subscribeVoiceRecordingRms(
+	listener: (rms: number) => void,
+): () => void {
+	const native = optionalNativeSmartNotesModule();
+	if (native?.addListener) {
+		try {
+			const sub = native.addListener(
+				"onSpeechRmsChanged",
+				(event: { rms?: number }) => {
+					if (typeof event?.rms === "number") {
+						listener(event.rms);
+					}
+				},
+			);
+			return () => sub.remove();
+		} catch {
+			return () => {};
+		}
+	}
+	return () => {};
+}
+
+export function subscribeVoiceRecordingPartial(
+	listener: (text: string) => void,
+): () => void {
+	const native = optionalNativeSmartNotesModule();
+	if (native?.addListener) {
+		try {
+			const sub = native.addListener(
+				"onSpeechPartialResult",
+				(event: { text?: string }) => {
+					if (typeof event?.text === "string") {
+						listener(event.text);
+					}
+				},
+			);
+			return () => sub.remove();
+		} catch {
+			return () => {};
+		}
+	}
+	return () => {};
+}
+
 export function isNoteOnlyLink(text: string): boolean {
 	const cleaned = text
 		.split(/\r?\n/)

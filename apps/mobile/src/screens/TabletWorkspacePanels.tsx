@@ -230,6 +230,7 @@ function tabletNoteListPanelProps(
 		onNoteListFilterChange: props.onNoteListFilterChange,
 		onOpenCreateNote: props.onOpenCreateNote,
 		onOpenSmartCreateNote: props.onOpenSmartCreateNote,
+		onCreateSmartNote: props.onCreateSmartNote,
 		onOpenSearch: props.onOpenSearch,
 		onOpenChangeNoteType: props.onOpenChangeNoteTypeForNote,
 		onOpenVault: props.onOpenNativeVault,
