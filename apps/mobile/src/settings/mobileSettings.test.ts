@@ -7,6 +7,8 @@ it('keeps automatic Git and telemetry opt-in on a fresh installation', () => {
   expect(defaultMobileSettings.analytics).toBe(false)
   expect(defaultMobileSettings.taskNotificationsEnabled).toBe(true)
   expect(defaultMobileSettings.taskNotificationTime).toBe('09:00')
+  expect(defaultMobileSettings.editorFontSize).toBe('normal')
+  expect(defaultMobileSettings.defaultEditingMode).toBe('wysiwyg')
 })
 
 it('round-trips task notification settings and validates time format', () => {

@@ -2,6 +2,8 @@ export type MobileSettings = {
   autoGit: boolean
   analytics: boolean
   crashReporting: boolean
+  editorFontSize: 'compact' | 'normal' | 'large'
+  defaultEditingMode: 'wysiwyg' | 'source'
   taskNotificationsEnabled: boolean
   taskNotificationTime: string
   theme: 'system' | 'light' | 'dark'
@@ -13,6 +15,8 @@ export const defaultMobileSettings: MobileSettings = {
   autoGit: false,
   analytics: false,
   crashReporting: false,
+  editorFontSize: 'normal',
+  defaultEditingMode: 'wysiwyg',
   taskNotificationsEnabled: true,
   taskNotificationTime: '09:00',
   theme: 'system',
@@ -30,6 +34,8 @@ export function parseMobileSettings(raw: string | null): MobileSettings {
     autoGit: setting(value.autoGit, [true, false], defaultMobileSettings.autoGit),
     analytics: setting(value.analytics, [true, false], defaultMobileSettings.analytics),
     crashReporting: setting(value.crashReporting, [true, false], defaultMobileSettings.crashReporting),
+    editorFontSize: setting(value.editorFontSize, ['compact', 'normal', 'large'], defaultMobileSettings.editorFontSize),
+    defaultEditingMode: setting(value.defaultEditingMode, ['wysiwyg', 'source'], defaultMobileSettings.defaultEditingMode),
     taskNotificationsEnabled: setting(value.taskNotificationsEnabled, [true, false], defaultMobileSettings.taskNotificationsEnabled),
     taskNotificationTime: notificationTimeSetting(value.taskNotificationTime, defaultMobileSettings.taskNotificationTime),
     theme: setting(value.theme, ['system', 'light', 'dark'], defaultMobileSettings.theme),
