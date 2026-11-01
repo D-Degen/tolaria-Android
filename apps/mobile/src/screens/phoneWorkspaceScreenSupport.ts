@@ -137,14 +137,15 @@ export function usePhoneWorkspaceNavigation({
 				const leavingNote = controller.selectedNote;
 				const flushed = saveActiveEditor?.();
 				if (isPromiseLike(flushed)) {
-					void flushed.then((content) => {
-						applyDraftLeaveAction(controller, leavingNote, content);
-						controller.onSelectNote(noteId);
-						setPhoneState("editor");
-					});
-					return;
+					void flushed.then(
+						(content) => {
+							applyDraftLeaveAction(controller, leavingNote, content);
+						},
+						() => {},
+					);
+				} else {
+					applyDraftLeaveAction(controller, leavingNote, flushed);
 				}
-				applyDraftLeaveAction(controller, leavingNote, flushed);
 				controller.onSelectNote(noteId);
 			}
 			setPhoneState("editor");

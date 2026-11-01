@@ -3,12 +3,15 @@ import { act, createElement, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { insertSpy } = vi.hoisted(() => ({
+const { insertSpy, insertDueSpy } = vi.hoisted(() => ({
+	insertDueSpy: vi.fn().mockResolvedValue(true),
 	insertSpy: vi.fn().mockResolvedValue(true),
 }));
 
 vi.mock("./mobileNativeEditorOperations", () => ({
+	insertDueIntoNativeEditor: insertDueSpy,
 	insertPlainTextIntoNativeEditor: insertSpy,
+	nativeWysiwygEditorSelection: vi.fn().mockReturnValue({ from: 10, to: 10 }),
 }));
 
 import { MobileTaskDueToolbarAffordance } from "./MobileTaskDueToolbarAffordance";
@@ -154,10 +157,14 @@ describe("MobileTaskDueToolbarAffordance", () => {
 			todayButton.click();
 		});
 
-		expect(insertSpy).toHaveBeenCalledWith(
+		expect(insertDueSpy).toHaveBeenCalledWith(
 			fakeEditor,
 			expect.objectContaining({
-				text: expect.stringMatching(/^\s*📅\s*\d{4}-\d{2}-\d{2}$/),
+				date: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+			}),
+			expect.objectContaining({
+				from: 10,
+				to: 10,
 			}),
 		);
 		expect(onInsertDate).toHaveBeenCalledWith(

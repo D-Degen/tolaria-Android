@@ -118,9 +118,11 @@ export function TabletWorkspace(props: TabletWorkspaceProps) {
 		snapshot,
 	});
 
+	const prevSnapshotNoteIdRef = useRef(snapshot.selectedNoteId);
 	useEffect(() => {
 		const targetNoteId = snapshot.selectedNoteId;
-		if (targetNoteId && targetNoteId !== controller.selectedNoteId) {
+		if (targetNoteId && targetNoteId !== prevSnapshotNoteIdRef.current) {
+			prevSnapshotNoteIdRef.current = targetNoteId;
 			controller.onSelectNote(targetNoteId);
 		}
 	}, [snapshot.selectedNoteId, controller]);

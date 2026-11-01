@@ -1,6 +1,6 @@
 import type { EditorBridge } from "@10play/tentap-editor";
 import { CalendarStar, Check, X } from "phosphor-react-native";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	Modal,
 	Pressable,
@@ -18,7 +18,11 @@ import {
 } from "../../workspace/mobileTasks";
 import { Button } from "../ui/button";
 import { Text } from "../ui/text";
-import { insertPlainTextIntoNativeEditor } from "./mobileNativeEditorOperations";
+import {
+	insertDueIntoNativeEditor,
+	type NativeWysiwygSelection,
+	nativeWysiwygEditorSelection,
+} from "./mobileNativeEditorOperations";
 
 type Props = {
 	editor: EditorBridge;
@@ -33,34 +37,64 @@ export function MobileTaskDueToolbarAffordance({
 	const [pickerOpen, setPickerOpen] = useState(false);
 	const [customInput, setCustomInput] = useState("");
 	const [invalidInput, setInvalidInput] = useState(false);
+	const [capturedModalSelection, setCapturedModalSelection] = useState<
+		NativeWysiwygSelection | undefined
+	>(undefined);
+
+	const lastSelectionRef = useRef<NativeWysiwygSelection | undefined>(
+		undefined,
+	);
+	const currentSelection = nativeWysiwygEditorSelection(editor);
+	useEffect(() => {
+		if (
+			currentSelection &&
+			(currentSelection.from > 0 || currentSelection.to > 0)
+		) {
+			lastSelectionRef.current = currentSelection;
+		}
+	}, [currentSelection]);
 
 	const today = useMemo(() => mobileIsoDate(new Date()), []);
 	const tomorrow = useMemo(() => mobileShiftIsoDate(today, 1), [today]);
 	const nextWeek = useMemo(() => mobileShiftIsoDate(today, 7), [today]);
 
 	const handlePick = useCallback(
-		(due: string, time?: string | null) => {
+		(
+			due: string,
+			time?: string | null,
+			targetSelection?: NativeWysiwygSelection,
+		) => {
 			const normalized = normalizeDue(due);
 			if (!normalized) return;
-			const text = time ? ` 📅 ${normalized} ⏰ ${time}` : ` 📅 ${normalized}`;
-			void insertPlainTextIntoNativeEditor(editor, { text });
+			const sel =
+				targetSelection ??
+				(currentSelection &&
+				(currentSelection.from > 0 || currentSelection.to > 0)
+					? currentSelection
+					: lastSelectionRef.current);
+			void insertDueIntoNativeEditor(editor, { date: normalized, time }, sel);
 			onInsertDate?.(normalized);
 			setPickerOpen(false);
 			setCustomInput("");
 		},
-		[editor, onInsertDate],
+		[currentSelection, editor, onInsertDate],
 	);
 
 	const handleOpenCustomPicker = useCallback(() => {
+		const capturedSelection =
+			currentSelection && (currentSelection.from > 0 || currentSelection.to > 0)
+				? currentSelection
+				: lastSelectionRef.current;
 		const opened = openAndroidDateTimeFlow({
 			onSelect: (due, time) => {
-				handlePick(due, time);
+				handlePick(due, time, capturedSelection);
 			},
 		});
 		if (!opened) {
+			setCapturedModalSelection(capturedSelection);
 			setPickerOpen(true);
 		}
-	}, [handlePick]);
+	}, [currentSelection, handlePick]);
 
 	const quickOptions = [
 		{ id: "today", label: "Heute", due: today },
@@ -75,7 +109,7 @@ export function MobileTaskDueToolbarAffordance({
 			return;
 		}
 		setInvalidInput(false);
-		handlePick(normalized);
+		handlePick(normalized, null, capturedModalSelection);
 	};
 
 	return (
@@ -110,7 +144,14 @@ export function MobileTaskDueToolbarAffordance({
 							},
 						]}
 						testID={`task-due-chip-${opt.id}`}
-						onPress={() => handlePick(opt.due)}
+						onPress={() => {
+							const sel =
+								currentSelection &&
+								(currentSelection.from > 0 || currentSelection.to > 0)
+									? currentSelection
+									: lastSelectionRef.current;
+							handlePick(opt.due, null, sel);
+						}}
 					>
 						<Text style={[styles.chipText, { color: colors.primary }]}>
 							{opt.label}

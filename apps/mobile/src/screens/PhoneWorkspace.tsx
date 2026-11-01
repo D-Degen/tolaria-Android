@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MobileCommandPalette } from "../components/workspace/MobileCommandPalette";
 import { useMobileLayoutProbe } from "../qa/mobileLayoutProbe";
 import { logNativeMobileCommandPaletteProof } from "../qa/nativeMobileCommandPaletteProbe";
@@ -121,9 +121,11 @@ function PhoneWorkspaceChrome(props: PhoneWorkspaceChromeProps) {
 		updatePhoneState(initialState);
 	}
 
+	const prevSnapshotNoteIdRef = useRef(props.snapshot.selectedNoteId);
 	useEffect(() => {
 		const targetNoteId = props.snapshot.selectedNoteId;
-		if (targetNoteId && targetNoteId !== baseController.selectedNoteId) {
+		if (targetNoteId && targetNoteId !== prevSnapshotNoteIdRef.current) {
+			prevSnapshotNoteIdRef.current = targetNoteId;
 			baseController.onSelectNote(targetNoteId);
 		}
 	}, [props.snapshot.selectedNoteId, baseController]);
