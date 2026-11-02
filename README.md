@@ -2,7 +2,7 @@
 
 # 💧 Tolaria
 
-Tolaria is an app for managing **markdown knowledge bases**, available on desktop (macOS, Windows, Linux) and mobile (iPhone, iPad). People use it for a variety of use cases:
+Tolaria is an app for managing **markdown knowledge bases**, available on desktop (macOS, Windows, Linux) and mobile (Android, iOS). People use it for a variety of use cases:
 
 * Operate second brains and personal knowledge
 * Organize company docs as context for AI
@@ -86,17 +86,30 @@ brew install --cask tolaria
 
 Download the [latest release here](https://refactoringhq.github.io/tolaria/download/) for macOS, Windows, or Linux. Windows installers are Authenticode-signed; company-managed devices may still require IT approval of the Tolaria publisher before first install.
 
-## Mobile (iPhone and iPad)
+### Android (APK)
 
-Tolaria for iOS is currently in **beta** via TestFlight. The mobile app brings Tolaria's core features to iPhone and iPad:
+Download the latest standalone Android release from [GitHub Releases](https://github.com/D-Degen/tolaria-Android/releases):
 
-- **WYSIWYG Markdown editor** — Fast, native rich-text editing powered by TenTap/Tiptap
-- **Real git integration** — Auto-commit on save, with merge support for multi-device workflows
-- **Sync with desktop** — Your vaults sync seamlessly through iCloud or Files, and share the same git repository as the desktop app
+- Universal standalone APK with support for `arm64-v8a`, `armeabi-v7a`, `x86`, and `x86_64`.
+- Direct installation (sideloading) on any modern Android device (Android 10+).
 
-The mobile app is still early and under active development. To get access to the beta:
+## Mobile (Android & iOS)
 
-- Join the [Tolaria Discord community](https://discord.gg/tRBC2u428B) to request TestFlight access and stay updated on mobile development
+Tolaria Mobile brings the full power of your personal markdown knowledge base to Android and iOS devices, designed from the ground up for tactile, offline-first note-taking.
+
+### Key Mobile Features
+
+- 📱 **Native Android UX & Navigation** — Edge-to-edge layout, full-screen settings with native top app bar navigation, and predictive back-gesture handling (`hardwareBackPress`).
+- ✍️ **Dual-Mode Editor (WYSIWYG & Raw)** — Native rich-text editing powered by TenTap/Tiptap with instant toggle to raw Markdown/source view, plus in-note Search & Replace.
+- ⚙️ **Modernized Settings** — Grouped card layout, interactive theme preview tiles (Light, Dark, System), customizable font sizes (*Compact*, *Normal*, *Large*), and default edit mode preferences.
+- 🎙️ **Voice Note Recording** — Record quick audio memos with real-time waveform visualization, directly generating notes.
+- 🗂️ **Overlay Note Properties** — Clean, non-intrusive metadata panel that slides smoothly over notes without obstructing focus.
+- 🔌 **Real Git Integration & Offline-First** — Local markdown vaults with automated background commit-on-save, SSH/HTTPS remote sync, and built-in conflict resolution.
+
+### Getting Mobile
+
+- **Android**: Download the pre-built `Tolaria-v*.apk` directly from [GitHub Releases](https://github.com/D-Degen/tolaria-Android/releases).
+- **iOS**: Join the [Tolaria Discord community](https://discord.gg/tRBC2u428B) to request TestFlight beta access.
 
 ## Getting started
 
@@ -149,6 +162,16 @@ Open `http://localhost:5173` for the browser-based mock mode, or run the native 
 
 ```bash
 pnpm tauri dev
+```
+
+To run the mobile app locally:
+
+```bash
+# Start Metro bundler
+pnpm --filter @tolaria/mobile start
+
+# Run on Android device or emulator
+pnpm --filter @tolaria/mobile android
 ```
 
 ## Tech Docs
