@@ -88,6 +88,18 @@ it.each([undefined, 0])('does not collapse a pane without a usable inherited key
   expect(padding(host)).toBe(0)
 })
 
+it('handles Android keyboard show and dismiss lifecycle', async () => {
+  native.os = 'android'
+  native.keyboardY = undefined
+  const host = await mount()
+  expect(padding(host)).toBe(0)
+  expect(host.querySelector('section')?.getAttribute('data-enabled')).toBe('true')
+  await emit('keyboardDidShow', 520)
+  expect(padding(host)).toBe(360)
+  await emit('keyboardDidHide', 880)
+  expect(padding(host)).toBe(0)
+})
+
 async function mount() {
   const host = document.createElement('div')
   root = createRoot(host)

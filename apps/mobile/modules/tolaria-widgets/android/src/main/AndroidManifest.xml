@@ -1,0 +1,34 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application>
+    <receiver
+      android:name="md.tolaria.widgets.TolariaQuickCaptureWidgetProvider"
+      android:exported="true"
+      android:label="@string/widget_quick_capture_name">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+      </intent-filter>
+      <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/tolaria_quick_capture_widget_info" />
+    </receiver>
+
+    <receiver
+      android:name="md.tolaria.widgets.TolariaCheckListWidgetProvider"
+      android:exported="true"
+      android:label="@string/widget_checklist_name">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+        <action android:name="md.tolaria.widgets.ACTION_TOGGLE_CHECKLIST_ITEM" />
+        <action android:name="md.tolaria.widgets.ACTION_ITEM_CLICK" />
+      </intent-filter>
+      <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/tolaria_check_list_widget_info" />
+    </receiver>
+
+    <service
+      android:name="md.tolaria.widgets.TolariaCheckListWidgetService"
+      android:permission="android.permission.BIND_REMOTEVIEWS"
+      android:exported="false" />
+  </application>
+</manifest>

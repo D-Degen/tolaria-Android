@@ -1,0 +1,9 @@
+<resources>
+  <string name="widget_quick_capture_name">Tolaria Quick Capture</string>
+  <string name="widget_checklist_name">Tolaria Aufgaben</string>
+  <string name="widget_checklist_empty">Keine offenen Aufgaben</string>
+  <string name="widget_new_note">Neue Notiz</string>
+  <string name="widget_voice_note">Sprachnotiz</string>
+  <string name="widget_search">Suche</string>
+  <string name="widget_inbox">Inbox</string>
+</resources>

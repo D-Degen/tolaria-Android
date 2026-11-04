@@ -29,7 +29,6 @@
         "RECEIVE_BOOT_COMPLETED",
         "RECORD_AUDIO",
         "SCHEDULE_EXACT_ALARM",
-        "USE_EXACT_ALARM",
         "VIBRATE"
       ],
       "adaptiveIcon": {

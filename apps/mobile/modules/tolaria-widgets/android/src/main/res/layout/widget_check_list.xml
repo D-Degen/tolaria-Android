@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:id="@+id/widget_root"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:background="@drawable/widget_bg"
+  android:orientation="vertical"
+  android:padding="12dp">
+
+  <!-- Header -->
+  <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingBottom="8dp">
+
+    <LinearLayout
+      android:id="@+id/btn_open_app"
+      android:layout_width="0dp"
+      android:layout_height="wrap_content"
+      android:layout_weight="1"
+      android:orientation="vertical"
+      android:clickable="true"
+      android:focusable="true">
+
+      <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Tolaria"
+        android:textColor="#1F2328"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+      <TextView
+        android:id="@+id/widget_subtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Aufgaben"
+        android:textColor="#57606A"
+        android:textSize="11sp" />
+    </LinearLayout>
+
+    <ImageButton
+      android:id="@+id/btn_add_task"
+      android:layout_width="32dp"
+      android:layout_height="32dp"
+      android:background="@drawable/widget_btn_bg"
+      android:contentDescription="@string/widget_new_note"
+      android:scaleType="centerInside"
+      android:src="@drawable/ic_widget_add" />
+  </LinearLayout>
+
+  <View
+    android:layout_width="match_parent"
+    android:layout_height="1dp"
+    android:background="#E1E4E8"
+    android:layout_marginBottom="4dp" />
+
+  <!-- List of tasks -->
+  <FrameLayout
+    android:layout_width="match_parent"
+    android:layout_height="0dp"
+    android:layout_weight="1">
+
+    <ListView
+      android:id="@+id/checklist_items"
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:divider="@null"
+      android:dividerHeight="0dp"
+      android:scrollbars="none" />
+
+    <TextView
+      android:id="@+id/empty_view"
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:gravity="center"
+      android:text="@string/widget_checklist_empty"
+      android:textColor="#57606A"
+      android:textSize="12sp"
+      android:visibility="gone" />
+  </FrameLayout>
+
+</LinearLayout>

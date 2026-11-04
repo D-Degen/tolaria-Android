@@ -1,9 +1,16 @@
 import { requireOptionalNativeModule } from 'expo'
 
+export type NativeSmartNotesFeatureStatus =
+  | 'AVAILABLE'
+  | 'DOWNLOADING'
+  | 'DOWNLOADABLE'
+  | 'UNAVAILABLE'
+
 export type NativeSmartNotesStatus = {
   available: boolean
   engine: string
   model?: string
+  status?: NativeSmartNotesFeatureStatus
   reason?: string
 }
 

@@ -594,13 +594,80 @@ export function generateLocalSmartNoteDraft(
 	};
 }
 
-function parseStructuredNoteResponse(
+export function parseStructuredNoteResponse(
 	rawResponse: string,
 	fallbackInput: string,
 	availableTypes: string[],
 ): SmartNoteDraft | null {
 	const cleaned = rawResponse.trim();
 	if (!cleaned) return null;
+
+	// Support structured JSON output from ML Kit GenAI Prompt API
+	const jsonCandidate = cleaned
+		.replace(/^```(?:json)?\s*/i, "")
+		.replace(/\s*```$/i, "")
+		.trim();
+	if (jsonCandidate.startsWith("{") && jsonCandidate.endsWith("}")) {
+		try {
+			const parsed = JSON.parse(jsonCandidate) as {
+				title?: string;
+				type?: string;
+				tags?: string[] | string;
+				todos?: string[] | string;
+				body?: string;
+				markdownBody?: string;
+			};
+			if (parsed && (parsed.title || parsed.body || parsed.markdownBody)) {
+				const title =
+					parsed.title?.trim()?.replace(/^["']|["']$/g, "") ||
+					localSuggestTitle(fallbackInput);
+				const rawType = parsed.type?.trim() ?? "";
+				const matchedType =
+					availableTypes.find((t) => t.toLowerCase() === rawType.toLowerCase()) ??
+					localSuggestType(fallbackInput, availableTypes);
+				const rawTags = Array.isArray(parsed.tags)
+					? parsed.tags
+					: typeof parsed.tags === "string"
+						? parsed.tags.split(",")
+						: [];
+				const tags =
+					rawTags.length > 0
+						? rawTags
+								.map((t) => String(t).trim().replace(/^#/, "").toLowerCase())
+								.filter((t) => t.length > 0)
+						: localGenerateTags(fallbackInput);
+				const rawTodos = Array.isArray(parsed.todos)
+					? parsed.todos
+					: typeof parsed.todos === "string"
+						? parsed.todos.split("\n")
+						: [];
+				const todos =
+					rawTodos.length > 0
+						? rawTodos
+								.map((t) => String(t).trim())
+								.filter((t) => t.length > 0)
+								.map((t) =>
+									t.startsWith("- [ ]") || t.startsWith("- [x]")
+										? t
+										: `- [ ] ${t.replace(/^[-*]\s*/, "")}`,
+								)
+						: localExtractTodos(fallbackInput);
+				const rawBody =
+					(parsed.body ?? parsed.markdownBody)?.trim() || fallbackInput;
+				const markdownBody = appendTodosIfMissing(rawBody, todos);
+				return {
+					title,
+					type: matchedType,
+					tags,
+					todos,
+					markdownBody,
+					engine: "gemini-nano",
+				};
+			}
+		} catch {
+			// Fall through to key-value parser
+		}
+	}
 
 	const titleMatch = cleaned.match(/^TITLE:\s*(.+)$/im);
 	const typeMatch = cleaned.match(/^TYPE:\s*(.+)$/im);

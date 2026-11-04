@@ -1,8 +1,19 @@
 /* global module, process, require */
 const { withSentry } = require('@sentry/react-native/expo')
 const { easProjectId, updateConfiguration } = require('./updates.config.js')
+const { withAndroidManifest } = require('expo/config-plugins')
 
-module.exports = ({ config }) => withSentry({
+function withPredictiveBack(config) {
+  return withAndroidManifest(config, (mod) => {
+    const app = mod.modResults.manifest.application?.[0]
+    if (app) {
+      app.$['android:enableOnBackInvokedCallback'] = 'true'
+    }
+    return mod
+  })
+}
+
+module.exports = ({ config }) => withPredictiveBack(withSentry({
   ...config,
   owner: 'refactoring',
   runtimeVersion: { policy: 'fingerprint' },
@@ -20,7 +31,7 @@ module.exports = ({ config }) => withSentry({
       posthogHost: process.env.EXPO_PUBLIC_POSTHOG_HOST || process.env.VITE_POSTHOG_HOST || 'https://us.i.posthog.com',
     },
   },
-}, { organization: process.env.SENTRY_ORG, project: process.env.SENTRY_PROJECT })
+}, { organization: process.env.SENTRY_ORG, project: process.env.SENTRY_PROJECT }))
 
 function iosBuildConfiguration(ios) {
   const profile = process.env.TOLARIA_BUILD_PROFILE

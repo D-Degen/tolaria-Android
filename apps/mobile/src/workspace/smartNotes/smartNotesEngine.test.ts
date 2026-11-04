@@ -5,6 +5,7 @@ import {
   getSmartNotesStatus,
   isNoteOnlyLink,
   localSuggestType,
+  parseStructuredNoteResponse,
   requestAutoStartVoiceInput,
   takePendingAutoStartVoiceInput,
   startVoiceRecordingSession,
@@ -126,5 +127,51 @@ Aufgabe: Dokumentation für Nutzer ergänzen`
     const unsubPartial = subscribeVoiceRecordingPartial(() => {})
     expect(typeof unsubPartial).toBe('function')
     unsubPartial()
+  })
+
+  it('parses ML Kit GenAI Prompt API structured JSON and key-value outputs', () => {
+    const jsonOutput = '```json\n' + JSON.stringify({
+      title: 'Sprint Review Notiz',
+      type: 'Meeting',
+      tags: ['#android', 'mlkit', 'gemini-nano'],
+      todos: ['Release APK bauen', '- [ ] Tests ausführen'],
+      body: 'Zusammenfassung des heutigen Sprint Reviews.',
+    }) + '\n```'
+
+    const parsedJson = parseStructuredNoteResponse(
+      jsonOutput,
+      'Fallback Text',
+      ['Note', 'Meeting', 'Project'],
+    )
+    expect(parsedJson).not.toBeNull()
+    expect(parsedJson?.title).toBe('Sprint Review Notiz')
+    expect(parsedJson?.type).toBe('Meeting')
+    expect(parsedJson?.tags).toEqual(['android', 'mlkit', 'gemini-nano'])
+    expect(parsedJson?.todos).toEqual([
+      '- [ ] Release APK bauen',
+      '- [ ] Tests ausführen',
+    ])
+    expect(parsedJson?.engine).toBe('gemini-nano')
+
+    const keyValueOutput = [
+      'TITLE: Architektur Entscheidung',
+      'TYPE: Project',
+      'TAGS: architektur, android, saf',
+      'TODOS:',
+      '- [ ] SAF Modul implementieren',
+      'BODY:',
+      'Details zur neuen Android Architektur.',
+    ].join('\n')
+
+    const parsedKv = parseStructuredNoteResponse(
+      keyValueOutput,
+      'Fallback Text',
+      ['Note', 'Project'],
+    )
+    expect(parsedKv).not.toBeNull()
+    expect(parsedKv?.title).toBe('Architektur Entscheidung')
+    expect(parsedKv?.type).toBe('Project')
+    expect(parsedKv?.tags).toEqual(['architektur', 'android', 'saf'])
+    expect(parsedKv?.todos).toEqual(['- [ ] SAF Modul implementieren'])
   })
 })

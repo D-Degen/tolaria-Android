@@ -11,10 +11,17 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import androidx.core.content.ContextCompat
+import com.google.mlkit.genai.common.DownloadCallback
+import com.google.mlkit.genai.common.FeatureStatus
+import com.google.mlkit.genai.common.GenAiException
+import com.google.mlkit.genai.prompt.Generation
+import com.google.mlkit.genai.prompt.GenerativeModel
+import com.google.mlkit.genai.prompt.java.GenerativeModelFutures
 import expo.modules.kotlin.Promise
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class TolariaSmartNotesModule : Module() {
   private val speechRequestCode = 48192
@@ -23,6 +30,17 @@ class TolariaSmartNotesModule : Module() {
   private var activeSpeechRecognizer: SpeechRecognizer? = null
   private val mainHandler = Handler(Looper.getMainLooper())
   private val speechTimeoutRunnable = Runnable { finishSpeech(null) }
+
+  // ML Kit GenAI Prompt API (Gemini Nano via AICore) lifecycle state
+  private val modelLock = Any()
+  @Volatile
+  private var generativeModel: GenerativeModel? = null
+  @Volatile
+  private var generativeFutures: GenerativeModelFutures? = null
+  @Volatile
+  private var isModelWarmedUp = false
+  @Volatile
+  private var isDownloadRequested = false
 
   // Continuous WhatsApp-style voice recording state
   @Volatile
@@ -193,6 +211,7 @@ class TolariaSmartNotesModule : Module() {
       finishSpeech(null)
       isContinuousRecording = false
       cleanupContinuousRecognizer()
+      closeGenerativeModel()
     }
 
     OnActivityResult { _, payload ->
@@ -232,9 +251,19 @@ class TolariaSmartNotesModule : Module() {
     }
 
     AsyncFunction("extractTodos") { text: String ->
-      val prompt = "Extrahiere alle Aufgaben, To-Dos und Handlungsanweisungen aus diesem Notiztext. Formatiere jede Zeile als '- [ ] <Aufgabe>':\n\n$text"
+      val prompt = "Extrahiere alle Aufgaben, To-Dos und Handlungsanweisungen aus diesem Notiztext. Gib ausschließlich die Aufgabenliste zurück und formatiere jede Zeile exakt als '- [ ] <Aufgabe>':\n\n$text"
       val raw = executePrompt(prompt)
-      raw.lines().map { it.trim() }.filter { it.isNotEmpty() }
+      val lines = raw.lines().map { it.trim() }.filter { it.isNotEmpty() }
+      val checkboxLines = lines
+        .filter { it.startsWith("- [ ]") || it.startsWith("- [x]") || it.startsWith("* [ ]") }
+        .map { if (it.startsWith("* [ ]")) "- [ ]" + it.removePrefix("* [ ]") else it }
+      if (checkboxLines.isNotEmpty()) {
+        checkboxLines
+      } else {
+        lines
+          .filter { it.startsWith("- ") || it.startsWith("* ") }
+          .map { "- [ ] " + it.substring(2).trim() }
+      }
     }
 
     AsyncFunction("generateStructuredNote") { text: String, availableTypes: List<String> ->
@@ -402,38 +431,128 @@ class TolariaSmartNotesModule : Module() {
     }
   }
 
+  private fun getOrCreateFutures(): GenerativeModelFutures? {
+    synchronized(modelLock) {
+      generativeFutures?.let { return it }
+      return try {
+        val model = Generation.getClient()
+        val futures = GenerativeModelFutures.from(model)
+        generativeModel = model
+        generativeFutures = futures
+        futures
+      } catch (_: Throwable) {
+        null
+      }
+    }
+  }
+
+  private fun closeGenerativeModel() {
+    synchronized(modelLock) {
+      try {
+        generativeModel?.close()
+      } catch (_: Throwable) {}
+      generativeModel = null
+      generativeFutures = null
+      isModelWarmedUp = false
+      isDownloadRequested = false
+    }
+  }
+
+  private fun triggerModelDownloadIfNeeded(futures: GenerativeModelFutures) {
+    if (isDownloadRequested) return
+    isDownloadRequested = true
+    try {
+      futures.download(object : DownloadCallback {
+        override fun onDownloadStarted(bytesToDownload: Long) {}
+        override fun onDownloadProgress(totalBytesDownloaded: Long) {}
+        override fun onDownloadCompleted() {
+          isDownloadRequested = false
+        }
+        override fun onDownloadFailed(e: GenAiException) {
+          isDownloadRequested = false
+        }
+      })
+    } catch (_: Throwable) {
+      isDownloadRequested = false
+    }
+  }
+
   private fun checkGeminiNanoAvailable(): Map<String, Any> {
     return try {
-      val generationClass = Class.forName("com.google.mlkit.genai.prompt.Generation")
-      val getClientMethod = generationClass.getMethod("getClient")
-      val client = getClientMethod.invoke(null)
-      mapOf(
-        "available" to (client != null),
-        "engine" to "gemini-nano",
-        "model" to "Gemini Nano (AICore)"
-      )
+      val futures = getOrCreateFutures()
+        ?: return mapOf(
+          "available" to false,
+          "engine" to "gemini-nano",
+          "status" to "UNAVAILABLE",
+          "reason" to "ML Kit GenAI Prompt API client could not be initialized"
+        )
+      val status = futures.checkStatus().get(10, TimeUnit.SECONDS)
+      when (status) {
+        FeatureStatus.AVAILABLE -> {
+          if (!isModelWarmedUp) {
+            isModelWarmedUp = true
+            try { futures.warmup() } catch (_: Throwable) {}
+          }
+          mapOf(
+            "available" to true,
+            "engine" to "gemini-nano",
+            "model" to "Gemini Nano (AICore)",
+            "status" to "AVAILABLE"
+          )
+        }
+        FeatureStatus.DOWNLOADING -> mapOf(
+          "available" to false,
+          "engine" to "gemini-nano",
+          "model" to "Gemini Nano (AICore)",
+          "status" to "DOWNLOADING",
+          "reason" to "Gemini Nano model is currently downloading via AICore"
+        )
+        FeatureStatus.DOWNLOADABLE -> {
+          triggerModelDownloadIfNeeded(futures)
+          mapOf(
+            "available" to false,
+            "engine" to "gemini-nano",
+            "model" to "Gemini Nano (AICore)",
+            "status" to "DOWNLOADABLE",
+            "reason" to "Gemini Nano model download initiated via AICore"
+          )
+        }
+        else -> mapOf(
+          "available" to false,
+          "engine" to "gemini-nano",
+          "status" to "UNAVAILABLE",
+          "reason" to "Gemini Nano / AICore is not supported on this device"
+        )
+      }
     } catch (e: Throwable) {
       mapOf(
         "available" to false,
         "engine" to "gemini-nano",
-        "reason" to "ML Kit GenAI Prompt API / AICore not present on this device"
+        "status" to "UNAVAILABLE",
+        "reason" to (e.message ?: "ML Kit GenAI Prompt API / AICore not present on this device")
       )
     }
   }
 
   private fun executePrompt(prompt: String): String {
+    if (prompt.isBlank()) return ""
     return try {
-      val generationClass = Class.forName("com.google.mlkit.genai.prompt.Generation")
-      val getClientMethod = generationClass.getMethod("getClient")
-      val client = getClientMethod.invoke(null)
-      if (client != null) {
-        val generateMethod = client.javaClass.methods.firstOrNull { it.name == "generateContent" }
-        val result = generateMethod?.invoke(client, prompt)
-        result?.toString() ?: ""
-      } else {
-        ""
+      val futures = getOrCreateFutures() ?: return ""
+      val status = futures.checkStatus().get(10, TimeUnit.SECONDS)
+      if (status == FeatureStatus.DOWNLOADABLE) {
+        triggerModelDownloadIfNeeded(futures)
+        return ""
       }
-    } catch (e: Throwable) {
+      if (status != FeatureStatus.AVAILABLE) {
+        return ""
+      }
+      if (!isModelWarmedUp) {
+        isModelWarmedUp = true
+        try { futures.warmup() } catch (_: Throwable) {}
+      }
+      val response = futures.generateContent(prompt).get(30, TimeUnit.SECONDS)
+      response?.candidates?.firstOrNull()?.text?.trim() ?: ""
+    } catch (_: Throwable) {
       ""
     }
   }
