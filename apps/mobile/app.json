@@ -3,7 +3,7 @@
     "name": "Tolaria",
     "slug": "tolaria-mobile",
     "scheme": "tolaria",
-    "version": "0.2.22",
+    "version": "0.2.23",
     "icon": "./assets/icon-round.png",
     "orientation": "default",
     "userInterfaceStyle": "automatic",
@@ -21,7 +21,7 @@
     },
     "android": {
       "package": "com.tolaria.mobile.dev",
-      "versionCode": 23,
+      "versionCode": 24,
       "softwareKeyboardLayoutMode": "resize",
       "permissions": [
         "INTERNET",
