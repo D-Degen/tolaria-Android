@@ -18,7 +18,7 @@ module.exports = ({ config }) => withPredictiveBack(withSentry({
   owner: 'refactoring',
   runtimeVersion: { policy: 'fingerprint' },
   updates: updateConfiguration(process.env.TOLARIA_BUILD_PROFILE, process.env.TOLARIA_UPDATE_CHANNEL),
-  plugins: [...(config.plugins || []), ['expo-build-properties', { ios: { enableSceneSupport: true } }]],
+  plugins: [...(config.plugins || []), ['expo-build-properties', { ios: { enableSceneSupport: true }, android: { minSdkVersion: 26 } }]],
   ios: iosBuildConfiguration(config.ios),
   android: androidBuildConfiguration(config.android),
   extra: {
