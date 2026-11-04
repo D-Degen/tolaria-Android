@@ -11,12 +11,6 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import androidx.core.content.ContextCompat
-import com.google.mlkit.genai.common.DownloadCallback
-import com.google.mlkit.genai.common.FeatureStatus
-import com.google.mlkit.genai.common.GenAiException
-import com.google.mlkit.genai.prompt.Generation
-import com.google.mlkit.genai.prompt.GenerativeModel
-import com.google.mlkit.genai.prompt.java.GenerativeModelFutures
 import expo.modules.kotlin.Promise
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
@@ -31,12 +25,12 @@ class TolariaSmartNotesModule : Module() {
   private val mainHandler = Handler(Looper.getMainLooper())
   private val speechTimeoutRunnable = Runnable { finishSpeech(null) }
 
-  // ML Kit GenAI Prompt API (Gemini Nano via AICore) lifecycle state
+  // ML Kit GenAI Prompt API (Gemini Nano via AICore) dynamic state
   private val modelLock = Any()
   @Volatile
-  private var generativeModel: GenerativeModel? = null
+  private var generativeModel: Any? = null
   @Volatile
-  private var generativeFutures: GenerativeModelFutures? = null
+  private var generativeFutures: Any? = null
   @Volatile
   private var isModelWarmedUp = false
   @Volatile
@@ -431,12 +425,16 @@ class TolariaSmartNotesModule : Module() {
     }
   }
 
-  private fun getOrCreateFutures(): GenerativeModelFutures? {
+  private fun getOrCreateFutures(): Any? {
     synchronized(modelLock) {
       generativeFutures?.let { return it }
       return try {
-        val model = Generation.getClient()
-        val futures = GenerativeModelFutures.from(model)
+        val genClass = Class.forName("com.google.mlkit.genai.prompt.Generation")
+        val getClientMethod = genClass.getMethod("getClient")
+        val model = getClientMethod.invoke(null) ?: return null
+        val futuresClass = Class.forName("com.google.mlkit.genai.prompt.java.GenerativeModelFutures")
+        val fromMethod = futuresClass.getMethod("from", Class.forName("com.google.mlkit.genai.prompt.GenerativeModel"))
+        val futures = fromMethod.invoke(null, model)
         generativeModel = model
         generativeFutures = futures
         futures
@@ -449,7 +447,11 @@ class TolariaSmartNotesModule : Module() {
   private fun closeGenerativeModel() {
     synchronized(modelLock) {
       try {
-        generativeModel?.close()
+        val model = generativeModel
+        if (model != null) {
+          val closeMethod = model.javaClass.getMethod("close")
+          closeMethod.invoke(model)
+        }
       } catch (_: Throwable) {}
       generativeModel = null
       generativeFutures = null
@@ -458,20 +460,22 @@ class TolariaSmartNotesModule : Module() {
     }
   }
 
-  private fun triggerModelDownloadIfNeeded(futures: GenerativeModelFutures) {
+  private fun triggerModelDownloadIfNeeded(futures: Any) {
     if (isDownloadRequested) return
     isDownloadRequested = true
     try {
-      futures.download(object : DownloadCallback {
-        override fun onDownloadStarted(bytesToDownload: Long) {}
-        override fun onDownloadProgress(totalBytesDownloaded: Long) {}
-        override fun onDownloadCompleted() {
+      val callbackClass = Class.forName("com.google.mlkit.genai.common.DownloadCallback")
+      val proxy = java.lang.reflect.Proxy.newProxyInstance(
+        callbackClass.classLoader,
+        arrayOf(callbackClass)
+      ) { _, method, _ ->
+        if (method.name == "onDownloadCompleted" || method.name == "onDownloadFailed") {
           isDownloadRequested = false
         }
-        override fun onDownloadFailed(e: GenAiException) {
-          isDownloadRequested = false
-        }
-      })
+        null
+      }
+      val downloadMethod = futures.javaClass.getMethod("download", callbackClass)
+      downloadMethod.invoke(futures, proxy)
     } catch (_: Throwable) {
       isDownloadRequested = false
     }
@@ -486,12 +490,19 @@ class TolariaSmartNotesModule : Module() {
           "status" to "UNAVAILABLE",
           "reason" to "ML Kit GenAI Prompt API client could not be initialized"
         )
-      val status = futures.checkStatus().get(10, TimeUnit.SECONDS)
-      when (status) {
-        FeatureStatus.AVAILABLE -> {
+      val checkStatusMethod = futures.javaClass.getMethod("checkStatus")
+      val futureStatus = checkStatusMethod.invoke(futures) as? java.util.concurrent.Future<*>
+      val statusObj = futureStatus?.get(10, TimeUnit.SECONDS)
+      val statusStr = statusObj?.toString() ?: "UNAVAILABLE"
+
+      when (statusStr) {
+        "AVAILABLE" -> {
           if (!isModelWarmedUp) {
             isModelWarmedUp = true
-            try { futures.warmup() } catch (_: Throwable) {}
+            try {
+              val warmupMethod = futures.javaClass.getMethod("warmup")
+              warmupMethod.invoke(futures)
+            } catch (_: Throwable) {}
           }
           mapOf(
             "available" to true,
@@ -500,14 +511,14 @@ class TolariaSmartNotesModule : Module() {
             "status" to "AVAILABLE"
           )
         }
-        FeatureStatus.DOWNLOADING -> mapOf(
+        "DOWNLOADING" -> mapOf(
           "available" to false,
           "engine" to "gemini-nano",
           "model" to "Gemini Nano (AICore)",
           "status" to "DOWNLOADING",
           "reason" to "Gemini Nano model is currently downloading via AICore"
         )
-        FeatureStatus.DOWNLOADABLE -> {
+        "DOWNLOADABLE" -> {
           triggerModelDownloadIfNeeded(futures)
           mapOf(
             "available" to false,
@@ -538,20 +549,34 @@ class TolariaSmartNotesModule : Module() {
     if (prompt.isBlank()) return ""
     return try {
       val futures = getOrCreateFutures() ?: return ""
-      val status = futures.checkStatus().get(10, TimeUnit.SECONDS)
-      if (status == FeatureStatus.DOWNLOADABLE) {
+      val checkStatusMethod = futures.javaClass.getMethod("checkStatus")
+      val futureStatus = checkStatusMethod.invoke(futures) as? java.util.concurrent.Future<*>
+      val statusObj = futureStatus?.get(10, TimeUnit.SECONDS)
+      val statusStr = statusObj?.toString() ?: ""
+
+      if (statusStr == "DOWNLOADABLE") {
         triggerModelDownloadIfNeeded(futures)
         return ""
       }
-      if (status != FeatureStatus.AVAILABLE) {
+      if (statusStr != "AVAILABLE") {
         return ""
       }
       if (!isModelWarmedUp) {
         isModelWarmedUp = true
-        try { futures.warmup() } catch (_: Throwable) {}
+        try {
+          val warmupMethod = futures.javaClass.getMethod("warmup")
+          warmupMethod.invoke(futures)
+        } catch (_: Throwable) {}
       }
-      val response = futures.generateContent(prompt).get(30, TimeUnit.SECONDS)
-      response?.candidates?.firstOrNull()?.text?.trim() ?: ""
+      val genMethod = futures.javaClass.getMethod("generateContent", String::class.java)
+      val futureResponse = genMethod.invoke(futures, prompt) as? java.util.concurrent.Future<*>
+      val response = futureResponse?.get(30, TimeUnit.SECONDS) ?: return ""
+      val getCandidatesMethod = response.javaClass.getMethod("getCandidates")
+      val candidates = getCandidatesMethod.invoke(response) as? List<*>
+      val firstCandidate = candidates?.firstOrNull() ?: return ""
+      val getTextMethod = firstCandidate.javaClass.getMethod("getText")
+      val text = getTextMethod.invoke(firstCandidate) as? String
+      text?.trim() ?: ""
     } catch (_: Throwable) {
       ""
     }
