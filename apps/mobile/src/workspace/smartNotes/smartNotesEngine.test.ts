@@ -130,13 +130,13 @@ Aufgabe: Dokumentation für Nutzer ergänzen`
   })
 
   it('parses ML Kit GenAI Prompt API structured JSON and key-value outputs', () => {
-    const jsonOutput = '```json\n' + JSON.stringify({
+    const jsonOutput = `\`\`\`json\n${JSON.stringify({
       title: 'Sprint Review Notiz',
       type: 'Meeting',
       tags: ['#android', 'mlkit', 'gemini-nano'],
       todos: ['Release APK bauen', '- [ ] Tests ausführen'],
       body: 'Zusammenfassung des heutigen Sprint Reviews.',
-    }) + '\n```'
+    })}\n\`\`\``
 
     const parsedJson = parseStructuredNoteResponse(
       jsonOutput,
