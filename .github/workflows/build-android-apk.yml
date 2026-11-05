@@ -88,7 +88,35 @@ jobs:
         run: |
           VERSION="${{ steps.mobile-version.outputs.version }}"
           mkdir -p release-dist
-          cp apps/mobile/android/app/build/outputs/apk/release/*.apk release-dist/Tolaria-v${VERSION}.apk
+          APK_DIR="apps/mobile/android/app/build/outputs/apk/release"
+
+          echo "Available APK files from build:"
+          ls -la "${APK_DIR}"
+
+          # ABI-specific builds
+          if [ -f "${APK_DIR}/app-arm64-v8a-release.apk" ]; then
+            cp "${APK_DIR}/app-arm64-v8a-release.apk" "release-dist/Tolaria-v${VERSION}-arm64.apk"
+          fi
+          if [ -f "${APK_DIR}/app-armeabi-v7a-release.apk" ]; then
+            cp "${APK_DIR}/app-armeabi-v7a-release.apk" "release-dist/Tolaria-v${VERSION}-armeabi-v7a.apk"
+          fi
+          if [ -f "${APK_DIR}/app-x86_64-release.apk" ]; then
+            cp "${APK_DIR}/app-x86_64-release.apk" "release-dist/Tolaria-v${VERSION}-x86_64.apk"
+          fi
+
+          # Universal build & default download fallback
+          if [ -f "${APK_DIR}/app-universal-release.apk" ]; then
+            cp "${APK_DIR}/app-universal-release.apk" "release-dist/Tolaria-v${VERSION}-universal.apk"
+            cp "${APK_DIR}/app-universal-release.apk" "release-dist/Tolaria-v${VERSION}.apk"
+          elif [ -f "${APK_DIR}/app-release.apk" ]; then
+            cp "${APK_DIR}/app-release.apk" "release-dist/Tolaria-v${VERSION}-universal.apk"
+            cp "${APK_DIR}/app-release.apk" "release-dist/Tolaria-v${VERSION}.apk"
+          elif [ -f "release-dist/Tolaria-v${VERSION}-arm64.apk" ]; then
+            cp "release-dist/Tolaria-v${VERSION}-arm64.apk" "release-dist/Tolaria-v${VERSION}.apk"
+          fi
+
+          echo "Prepared release artifacts in release-dist/:"
+          ls -lh release-dist/
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
