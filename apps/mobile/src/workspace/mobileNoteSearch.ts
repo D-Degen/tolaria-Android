@@ -93,12 +93,19 @@ export function sortMobileNotesByIdentityMatch(notes: MobileNote[], query: Searc
     .map(({ note }) => note)
 }
 
+const quickOpenSearchTextCache = new WeakMap<MobileNote, string>()
+const noteListSearchTextCache = new WeakMap<MobileNote, Map<string, string>>()
+
 export function mobileQuickOpenSearchText(note: MobileNote) {
-  return normalizeSearchText([
+  const cached = quickOpenSearchTextCache.get(note)
+  if (cached !== undefined) return cached
+  const normalized = normalizeSearchText([
     mobileNoteIdentitySearchText(note),
     note.snippet,
     note.status,
   ].join(' '))
+  quickOpenSearchTextCache.set(note, normalized)
+  return normalized
 }
 
 export function mobileNoteListMatchesQuery(
@@ -117,12 +124,29 @@ export function mobileNoteListSearchText(
   context: MobileNoteListSearchContext = {},
 ) {
   const { displayModes, displayPropertyKeys = [], typeDefinitions } = context
+  const contextKey =
+    displayPropertyKeys.join('\0') +
+    (displayModes ? `|${Object.entries(displayModes).map(([k, v]) => `${k}:${v}`).join(',')}` : '') +
+    (typeDefinitions ? `|td:${Object.keys(typeDefinitions).length}` : '')
+  let perNoteCache = noteListSearchTextCache.get(note)
+  const cached = perNoteCache?.get(contextKey)
+  if (cached !== undefined) return cached
 
-  return normalizeSearchText([
+  const normalized = normalizeSearchText([
     note.title,
     note.snippet,
     ...mobileNoteDisplayLabels(note, displayPropertyKeys, typeDefinitions, displayModes),
   ].join(' '))
+
+  if (!perNoteCache) {
+    perNoteCache = new Map()
+    noteListSearchTextCache.set(note, perNoteCache)
+  }
+  if (perNoteCache.size >= 8) {
+    perNoteCache.clear()
+  }
+  perNoteCache.set(contextKey, normalized)
+  return normalized
 }
 
 function normalizeSearchText(value: SearchText) {

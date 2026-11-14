@@ -1,4 +1,5 @@
 import { FolderOpen, MagnifyingGlass } from 'phosphor-react-native'
+import { memo, useCallback } from 'react'
 import { Pressable, View } from 'react-native'
 import { mobileText } from '../../i18n/mobileText'
 import type { MobileLayoutProbe } from '../../qa/mobileLayoutProbe'
@@ -38,7 +39,7 @@ export type MobileNoteListRowProps = {
   typeDefinitions?: MobileTypeDefinitions
 }
 
-export function MobileNoteListRow(props: MobileNoteListRowProps) {
+export const MobileNoteListRow = memo(function MobileNoteListRow(props: MobileNoteListRowProps) {
   const colors = useMobileColors()
   const {
     activeNoteId,
@@ -54,6 +55,8 @@ export function MobileNoteListRow(props: MobileNoteListRowProps) {
     propertyDisplayModes,
     typeDefinitions,
   } = props
+  const handlePress = useCallback(() => onSelectNote(note.id), [note.id, onSelectNote])
+  const handleLongPress = useCallback(() => onBeginSelection?.(note.id), [note.id, onBeginSelection])
   return (
     <MobileSwipeableNoteRow actions={props.rowActions} isInbox={isInbox} note={note}>
       <MobileListRow
@@ -104,12 +107,12 @@ export function MobileNoteListRow(props: MobileNoteListRowProps) {
             />
           )
         }
-        onLongPress={onBeginSelection ? () => onBeginSelection(note.id) : undefined}
-        onPress={() => onSelectNote(note.id)}
+        onLongPress={onBeginSelection ? handleLongPress : undefined}
+        onPress={handlePress}
       />
     </MobileSwipeableNoteRow>
   )
-}
+})
 
 function NoteRowChips({
   displayPropertyKeys,

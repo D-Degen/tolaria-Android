@@ -152,6 +152,7 @@ function createSurfaceStyles(mobileColors: MobileColors, metrics: MobileMetrics)
       borderRadius: mobileCommandPaletteLayoutContract.paletteBorderRadius,
       borderWidth: StyleSheet.hairlineWidth,
       overflow: 'hidden',
+      elevation: 8,
       shadowColor: '#000000',
       shadowOffset: { height: 10, width: 0 },
       shadowOpacity: 0.14,

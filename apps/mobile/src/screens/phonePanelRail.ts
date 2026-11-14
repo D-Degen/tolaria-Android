@@ -54,7 +54,8 @@ const phoneRailEditorOwnsTouch = (geometry: PhoneRailGeometry, bounds: PhoneRail
   'worklet'
   if (bounds.origin !== 'editor') return false
   if (movement.y <= 56) return false
-  return movement.x > 24 && movement.x < geometry.width - 24;
+  // Keep a 48dp rail swipe zone so users can swipe past Android's 24dp system-back gesture edge.
+  return movement.x > 48 && movement.x < geometry.width - 48;
 }
 
 const phoneRailAxisIntent = (movement: Movement): PhoneRailIntent => {

@@ -53,6 +53,13 @@ module.exports = ({ config }) =>
 					plugins: [
 						...(config.plugins || []),
 						[
+							"expo-notifications",
+							{
+								icon: "./assets/notification-icon.png",
+								color: "#155DFF",
+							},
+						],
+						[
 							"expo-build-properties",
 							{
 								ios: { enableSceneSupport: true },
@@ -65,6 +72,8 @@ module.exports = ({ config }) =>
 -keep class md.tolaria.** { *; }
 -keepclassmembers class md.tolaria.** { *; }
 -dontwarn md.tolaria.**
+-keep class com.google.mlkit.genai.** { *; }
+-keepclassmembers class com.google.mlkit.genai.** { *; }
 -dontwarn com.google.mlkit.genai.**
 
 # React Native Reanimated & TurboModules

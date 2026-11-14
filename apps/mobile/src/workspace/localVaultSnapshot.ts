@@ -115,6 +115,7 @@ type MobileNoteDetailLevel = 'editable' | 'summary'
 type SnapshotFrontmatterValues = Map<string, unknown>
 
 const DEFAULT_MAX_NOTES = 80
+const MAX_FRONTMATTER_LOOKUP_CACHE_SIZE = 4096
 const snapshotFrontmatterValueCache = new WeakMap<LocalVaultFrontmatter, SnapshotFrontmatterValues>()
 const snapshotFrontmatterLookupKeyCache = new Map<string, string>()
 
@@ -324,6 +325,10 @@ function normalizedFrontmatterLookupKey(key: string): string {
   if (cached) return cached
 
   const normalizedKey = key.trim().toLowerCase().replace(/\s+/g, '_')
+  if (snapshotFrontmatterLookupKeyCache.size >= MAX_FRONTMATTER_LOOKUP_CACHE_SIZE) {
+    const oldestKey = snapshotFrontmatterLookupKeyCache.keys().next().value
+    if (oldestKey !== undefined) snapshotFrontmatterLookupKeyCache.delete(oldestKey)
+  }
   snapshotFrontmatterLookupKeyCache.set(key, normalizedKey)
   return normalizedKey
 }

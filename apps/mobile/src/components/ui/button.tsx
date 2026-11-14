@@ -69,7 +69,7 @@ type ButtonProps = React.ComponentProps<typeof Pressable> &
   VariantProps<typeof buttonVariants>
 
 const defaultAndroidRipple = {
-  color: 'rgba(0, 0, 0, 0.08)',
+  color: 'rgba(128, 128, 128, 0.22)',
   borderless: false,
 }
 
@@ -78,19 +78,23 @@ function Button({
   size,
   variant,
   android_ripple,
+  hitSlop,
   ...props
 }: ButtonProps) {
   const ripple =
     android_ripple ??
     (variant === 'ghost' || size === 'icon'
-      ? { color: 'rgba(0, 0, 0, 0.08)', borderless: true }
+      ? { color: 'rgba(128, 128, 128, 0.22)', borderless: true }
       : defaultAndroidRipple)
+  const resolvedHitSlop =
+    hitSlop ?? (size === 'icon' || size === 'sm' ? { top: 6, bottom: 6, left: 6, right: 6 } : undefined)
 
   return (
     <TextClassContext.Provider value={buttonTextVariants({ size, variant })}>
       <Pressable
         android_ripple={Platform.OS === 'android' ? ripple : undefined}
         className={cn(props.disabled ? 'opacity-50' : null, buttonVariants({ size, variant }), className)}
+        hitSlop={resolvedHitSlop}
         role="button"
         {...props}
       />

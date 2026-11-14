@@ -42,6 +42,12 @@ export function MobileButton(props: MobileButtonProps) {
     variant = 'secondary',
     ...buttonProps
   } = props
+  const hitSlop =
+    density === 'status'
+      ? { top: 12, bottom: 12, left: 8, right: 8 }
+      : density === 'compact'
+        ? { top: 8, bottom: 8, left: 4, right: 4 }
+        : undefined
   const buttonStyle = [
     styles.base,
     buttonDensityStyles[density],
@@ -67,6 +73,7 @@ export function MobileButton(props: MobileButtonProps) {
       aria-busy={accessibilityState?.busy}
       className={cn(buttonDensityClassNames[density], buttonClassNames[variant])}
       disabled={disabled}
+      hitSlop={hitSlop}
       size="sm"
       style={StyleSheet.flatten(buttonStyle)}
       variant={buttonVariantByMobileVariant[variant]}
@@ -158,7 +165,7 @@ function buttonFrameStyles(metrics: MobileMetrics) {
       gap: metrics.size(6),
     },
     default: {
-      minHeight: Math.max(44, metrics.size(36)),
+      minHeight: Math.max(48, metrics.size(36)),
       borderRadius: 6,
       paddingHorizontal: metrics.size(12),
     },

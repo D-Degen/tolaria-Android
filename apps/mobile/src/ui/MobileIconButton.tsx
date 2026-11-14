@@ -23,12 +23,12 @@ export function MobileIconButton({
   selected?: boolean
   testID?: string
 }) {
-  const { styles, hitSlop } = useMobileStyles(createIconButtonStyles)
+  const { styles, toolbarHitSlop, defaultHitSlop } = useMobileStyles(createIconButtonStyles)
   return (
     <Button
       accessibilityLabel={accessibilityLabel}
       className={cn('active:opacity-70', selected ? 'bg-accent' : 'bg-transparent')}
-      hitSlop={hitSlop}
+      hitSlop={density === 'toolbar' ? toolbarHitSlop : defaultHitSlop}
       onPress={onPress}
       size="icon"
       style={StyleSheet.flatten(styles[density])}
@@ -60,5 +60,9 @@ function createIconButtonStyles(_colors: MobileColors, metrics: MobileMetrics) {
     flexDirection: 'row',
   },
   })
-  return { styles, hitSlop: desktopToolbarActionParity.hitSlop }
+  return {
+    styles,
+    toolbarHitSlop: Math.max(desktopToolbarActionParity.hitSlop, 12),
+    defaultHitSlop: 6,
+  }
 }

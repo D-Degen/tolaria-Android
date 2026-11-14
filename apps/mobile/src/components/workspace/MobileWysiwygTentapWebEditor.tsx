@@ -54,7 +54,7 @@ export function MobileWysiwygTenTapEditor() {
 
 function renderWhenInjected() {
   if (!window.contentInjected) {
-    window.setTimeout(renderWhenInjected, 1)
+    window.requestAnimationFrame(renderWhenInjected)
     return
   }
 

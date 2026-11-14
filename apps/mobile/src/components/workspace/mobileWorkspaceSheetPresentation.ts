@@ -36,8 +36,14 @@ const actionTitleByAction: Record<MobileWorkspaceAction, Parameters<typeof mobil
 }
 
 export const phoneSheetStyles = StyleSheet.create({
-  container: { paddingHorizontal: 8, paddingVertical: 8 },
-  sheet: { maxHeight: '100%' },
+  container: { justifyContent: 'flex-end', paddingHorizontal: 0, paddingVertical: 0 },
+  sheet: {
+    maxHeight: '92%',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+  },
   compactBody: { flex: 1 },
   compactContent: { padding: 8 },
 })

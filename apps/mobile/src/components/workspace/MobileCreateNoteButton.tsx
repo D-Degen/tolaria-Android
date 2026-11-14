@@ -25,7 +25,7 @@ export function MobileCreateNoteButton({
   const triggerHaptic = () => {
     if (Platform.OS === 'android' || Platform.OS === 'ios') {
       try {
-        Vibration.vibrate(25)
+        Vibration.vibrate(10)
       } catch {
         // Ignore vibration permission or device support errors
       }

@@ -1,5 +1,5 @@
 import { PaperPlaneRight, Trash } from 'phosphor-react-native'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Animated,
@@ -51,11 +51,16 @@ function MobileVoiceRecordingBarInner({
   const insets = useSafeAreaInsets()
 
   const [durationSec, setDurationSec] = useState(0)
-  const [rmsLevel, setRmsLevel] = useState(0)
   const [partialText, setPartialText] = useState('')
   const [status, setStatus] = useState<'recording' | 'processing' | 'error'>('recording')
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null)
   const [pulseAnim] = useState(() => new Animated.Value(1))
+  const [rmsAnim] = useState(() => new Animated.Value(0))
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
+  const sessionFinishedRef = useRef(false)
 
   const triggerHaptic = (duration = 25) => {
     if (Platform.OS === 'android' || Platform.OS === 'ios') {
@@ -82,15 +87,17 @@ function MobileVoiceRecordingBarInner({
   // Lifecycle while bar is mounted
   useEffect(() => {
     let isMounted = true
+    sessionFinishedRef.current = false
 
     // Start native continuous speech recognizer
     void startVoiceRecordingSession().then((started) => {
       if (!isMounted) return
       if (!started) {
+        sessionFinishedRef.current = true
         setStatus('error')
         setFeedbackMessage('Mikrofon nicht verfügbar')
         setTimeout(() => {
-          if (isMounted) onClose()
+          if (isMounted) onCloseRef.current()
         }, 1600)
       }
     })
@@ -100,8 +107,8 @@ function MobileVoiceRecordingBarInner({
     }, 1000)
 
     const unsubscribeRms = subscribeVoiceRecordingRms((rms) => {
-      if (isMounted) {
-        setRmsLevel(rms)
+      if (isMounted && typeof rmsAnim.setValue === 'function') {
+        rmsAnim.setValue(Math.max(0, rms + 2))
       }
     })
 
@@ -116,16 +123,22 @@ function MobileVoiceRecordingBarInner({
       clearInterval(timer)
       unsubscribeRms()
       unsubscribePartial()
+      if (!sessionFinishedRef.current) {
+        sessionFinishedRef.current = true
+        void cancelVoiceRecordingSession()
+      }
     }
-  }, [onClose])
+  }, [rmsAnim])
 
   const handleCancel = useCallback(async () => {
+    sessionFinishedRef.current = true
     triggerHaptic(20)
     await cancelVoiceRecordingSession()
-    onClose()
-  }, [onClose])
+    onCloseRef.current()
+  }, [])
 
   const handleSend = useCallback(async () => {
+    sessionFinishedRef.current = true
     triggerHaptic(35)
     setStatus('processing')
     setFeedbackMessage('KI formatiert Notiz...')
@@ -137,21 +150,21 @@ function MobileVoiceRecordingBarInner({
       if (!finalText) {
         setFeedbackMessage('Keine Sprache erkannt')
         setTimeout(() => {
-          onClose()
+          onCloseRef.current()
         }, 1200)
         return
       }
 
       const draft = await generateSmartNoteDraft(finalText, availableTypes)
       onCreateSmartNote?.(draft)
-      onClose()
+      onCloseRef.current()
     } catch {
       setFeedbackMessage('Fehler bei der Verarbeitung')
       setTimeout(() => {
-        onClose()
+        onCloseRef.current()
       }, 1400)
     }
-  }, [availableTypes, onCreateSmartNote, onClose, partialText])
+  }, [availableTypes, onCreateSmartNote, partialText])
 
   const minutes = Math.floor(durationSec / 60)
   const seconds = durationSec % 60
@@ -186,10 +199,16 @@ function MobileVoiceRecordingBarInner({
           {/* Center: Dynamic Waveform Bars */}
           <View style={styles.waveformContainer} testID="voice-record-waveform">
             {BAR_MULTIPLIERS.map((multiplier, index) => {
-              const clamped = Math.max(0, rmsLevel + 2)
-              const barHeight = Math.min(26, Math.max(4, 4 + clamped * 1.5 * multiplier))
+              const barHeight =
+                typeof rmsAnim.interpolate === 'function'
+                  ? rmsAnim.interpolate({
+                      inputRange: [0, 15],
+                      outputRange: [4, Math.min(26, 4 + 15 * 1.5 * multiplier)],
+                      extrapolate: 'clamp',
+                    })
+                  : 4
               return (
-                <View
+                <Animated.View
                   key={`wave-bar-${index}`}
                   style={[
                     styles.waveformBar,

@@ -1,5 +1,5 @@
 import { MagnifyingGlass } from 'phosphor-react-native'
-import { type ReactElement, type ReactNode, useMemo, useState } from 'react'
+import { type ReactElement, type ReactNode, useCallback, useMemo, useState } from 'react'
 import { FlatList, type RefreshControlProps, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { mobileCopy, mobileText } from '../../i18n/mobileText'
@@ -131,6 +131,8 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
     onSelectNote,
   })
 
+  const handleVoiceRecordingClose = useCallback(() => setVoiceRecordingActive(false), [])
+
   return (
     <MobilePanel
       {...layoutProbe.probe('noteList.panel')}
@@ -191,7 +193,7 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
         <MobileVoiceRecordingBar
           availableTypes={typeDefinitions ? Object.keys(typeDefinitions) : ['Note']}
           visible={voiceRecordingActive}
-          onClose={() => setVoiceRecordingActive(false)}
+          onClose={handleVoiceRecordingClose}
           onCreateSmartNote={(draft) => {
             setVoiceRecordingActive(false)
             if (props.onCreateSmartNote) {
@@ -301,6 +303,40 @@ function NoteListContent(props: NoteListContentProps) {
     selectedNoteId,
     typeDefinitions,
   } = props
+  const keyExtractor = useCallback((note: MobileNote) => note.id, [])
+  const activeRowActions = bulkSelection.selectedNotes.length === 0 ? props.rowActions : undefined
+  const renderNoteItem = useCallback(
+    ({ item: note }: { item: MobileNote }) => (
+      <MobileNoteListRow
+        rowActions={activeRowActions}
+        activeNoteId={activeNoteId}
+        displayPropertyKeys={displayPropertyKeys}
+        isInbox={isInbox}
+        layoutProbe={layoutProbe}
+        multiSelected={bulkSelection.selectedNoteIds.has(note.id)}
+        note={note}
+        onBeginSelection={bulkSelection.beginSelection}
+        onOpenChangeNoteType={props.onOpenChangeNoteType}
+        propertyDisplayModes={propertyDisplayModes}
+        typeDefinitions={typeDefinitions}
+        onSelectNote={bulkSelection.pressNote}
+      />
+    ),
+    [
+      activeNoteId,
+      activeRowActions,
+      bulkSelection.beginSelection,
+      bulkSelection.pressNote,
+      bulkSelection.selectedNoteIds,
+      displayPropertyKeys,
+      isInbox,
+      layoutProbe,
+      propertyDisplayModes,
+      props.onOpenChangeNoteType,
+      typeDefinitions,
+    ],
+  )
+
   if (neighborhood) {
     return (
       <NeighborhoodNoteList
@@ -325,7 +361,7 @@ function NoteListContent(props: NoteListContentProps) {
       data={notes}
       extraData={bulkSelection.rowExtraData(selectedNoteId)}
       initialNumToRender={16}
-      keyExtractor={(note) => note.id}
+      keyExtractor={keyExtractor}
       ListEmptyComponent={
         <NoteListEmptyState
           emptyVault={emptyVault}
@@ -333,27 +369,12 @@ function NoteListContent(props: NoteListContentProps) {
           onOpenVault={onOpenVault}
         />
       }
+      maxToRenderPerBatch={12}
       refreshControl={refreshControl}
-      renderItem={({ item: note }) => (
-        <MobileNoteListRow
-          {...{
-            rowActions: bulkSelection.selectedNotes.length === 0 ? props.rowActions : undefined,
-            activeNoteId,
-            displayPropertyKeys,
-            isInbox,
-            layoutProbe,
-            multiSelected: bulkSelection.selectedNoteIds.has(note.id),
-            note,
-            onBeginSelection: bulkSelection.beginSelection,
-            onOpenChangeNoteType: props.onOpenChangeNoteType,
-            propertyDisplayModes,
-            typeDefinitions,
-            onSelectNote: bulkSelection.pressNote,
-          }}
-        />
-      )}
+      renderItem={renderNoteItem}
       removeClippedSubviews
       showsVerticalScrollIndicator={false}
+      updateCellsBatchingPeriod={50}
       windowSize={5}
     />
   )

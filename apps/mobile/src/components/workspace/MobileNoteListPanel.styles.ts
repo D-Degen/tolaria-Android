@@ -174,7 +174,12 @@ function createListStyles(mobileColors: MobileColors, metrics: MobileMetrics) {
     listContent: {
       paddingHorizontal: 0,
       paddingTop: 0,
-      paddingBottom: metrics.size(mobileNoteListCreateChrome.diameter + mobileNoteListCreateChrome.inset * 2),
+      paddingBottom: metrics.size(
+        mobileNoteListCreateChrome.diameter +
+          mobileNoteListCreateChrome.smartVoiceDiameter +
+          mobileNoteListCreateChrome.smartVoiceGap +
+          mobileNoteListCreateChrome.inset * 2,
+      ),
     },
     searchPill: {
       minHeight: 36,

@@ -9,6 +9,8 @@ import org.json.JSONObject
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.LinkOption
+import java.security.MessageDigest
+import java.util.UUID
 
 interface ExternalWorkspaceTree {
   fun snapshot(): Map<String, String>
@@ -138,6 +140,8 @@ class SafWorkspaceTree(
   private val context: Context,
   private val treeUri: Uri
 ) : ExternalWorkspaceTree {
+  private val directoryCache = mutableMapOf<String, DocumentFile>()
+
   private fun rootDocument(): DocumentFile {
     val doc = DocumentFile.fromTreeUri(context, treeUri)
     if (doc == null || !doc.exists() || !doc.isDirectory || !doc.canRead()) {
@@ -147,6 +151,7 @@ class SafWorkspaceTree(
   }
 
   override fun snapshot(): Map<String, String> {
+    directoryCache.clear()
     val rootDoc = rootDocument()
     val result = mutableMapOf<String, String>()
     walkSaf(rootDoc, "", result)
@@ -160,11 +165,11 @@ class SafWorkspaceTree(
       if (LocalWorkspaceTree.skippedNames.contains(name.lowercase())) continue
       val rel = if (prefix.isEmpty()) name else "$prefix/$name"
       if (child.isDirectory) {
+        directoryCache[rel] = child
         result[rel] = "directory"
         walkSaf(child, rel, result)
       } else if (child.isFile) {
-        val bytes = readDocumentBytes(child.uri)
-        result[rel] = sha256Hex(bytes)
+        result[rel] = streamSha256Hex(child.uri)
       }
     }
   }
@@ -173,7 +178,7 @@ class SafWorkspaceTree(
     val parts = validateRelativeWorkspacePath(path)
     val doc = findDocument(rootDocument(), parts) ?: return null
     if (doc.isDirectory) return "directory"
-    if (doc.isFile) return sha256Hex(readDocumentBytes(doc.uri))
+    if (doc.isFile) return streamSha256Hex(doc.uri)
     return null
   }
 
@@ -203,7 +208,15 @@ class SafWorkspaceTree(
       targetDoc = parentDoc.createFile("application/octet-stream", fileName)
         ?: throw WorkspaceAccessException.CoordinationFailed()
     }
-    val out = context.contentResolver.openOutputStream(targetDoc.uri, "wt")
+    val out = try {
+      context.contentResolver.openOutputStream(targetDoc.uri, "wt")
+    } catch (_: UnsupportedOperationException) {
+      null
+    } catch (_: IllegalArgumentException) {
+      null
+    } catch (_: SecurityException) {
+      null
+    }
       ?: context.contentResolver.openOutputStream(targetDoc.uri)
       ?: throw WorkspaceAccessException.CoordinationFailed()
     out.use { stream ->
@@ -223,19 +236,40 @@ class SafWorkspaceTree(
     if (!doc.delete()) {
       throw WorkspaceAccessException.CoordinationFailed()
     }
+    directoryCache.clear()
   }
 
   private fun findDocument(rootDoc: DocumentFile, parts: List<String>): DocumentFile? {
     var current: DocumentFile = rootDoc
-    for (part in parts) {
-      current = current.findFile(part) ?: return null
+    val pathBuilder = StringBuilder()
+    for (i in parts.indices) {
+      val part = parts[i]
+      if (pathBuilder.isNotEmpty()) pathBuilder.append('/')
+      pathBuilder.append(part)
+      val key = pathBuilder.toString()
+      val isIntermediate = i < parts.lastIndex
+      val cached = if (isIntermediate) directoryCache[key] else null
+      val next = cached ?: current.findFile(part) ?: return null
+      if (isIntermediate && next.isDirectory) {
+        directoryCache[key] = next
+      }
+      current = next
     }
     return current
   }
 
   private fun ensureDirectoryChain(rootDoc: DocumentFile, parts: List<String>): DocumentFile {
     var current = rootDoc
+    val pathBuilder = StringBuilder()
     for (part in parts) {
+      if (pathBuilder.isNotEmpty()) pathBuilder.append('/')
+      pathBuilder.append(part)
+      val key = pathBuilder.toString()
+      val cached = directoryCache[key]
+      if (cached != null && cached.exists() && cached.isDirectory) {
+        current = cached
+        continue
+      }
       val existing = current.findFile(part)
       current = if (existing != null) {
         if (!existing.isDirectory) throw WorkspaceAccessException.LinkedConflict()
@@ -243,8 +277,24 @@ class SafWorkspaceTree(
       } else {
         current.createDirectory(part) ?: throw WorkspaceAccessException.CoordinationFailed()
       }
+      directoryCache[key] = current
     }
     return current
+  }
+
+  private fun streamSha256Hex(uri: Uri): String {
+    val input = context.contentResolver.openInputStream(uri)
+      ?: throw WorkspaceAccessException.CoordinationFailed()
+    val digest = MessageDigest.getInstance("SHA-256")
+    val buffer = ByteArray(8192)
+    input.use { stream ->
+      while (true) {
+        val read = stream.read(buffer)
+        if (read <= 0) break
+        digest.update(buffer, 0, read)
+      }
+    }
+    return digest.digest().joinToString("") { "%02x".format(it) }
   }
 
   private fun readDocumentBytes(uri: Uri): ByteArray {
@@ -548,31 +598,41 @@ class LinkedWorkspaceSession(
     previousRemote: Map<String, String>,
     plan: LinkedConflictPlan
   ) {
-    // Stage required bytes in memory before mutating either side
-    val stagedBytes = mutableMapOf<String, ByteArray>()
-    for ((destPath, value) in plan.merged) {
-      if (value == "directory") continue
-      val origin = plan.origins[destPath] ?: throw WorkspaceAccessException.InvalidState()
-      val sourceTree = if (origin.remote) remote else local
-      val bytes = sourceTree.readBytes(origin.path)
-      if (sha256Hex(bytes) != value) {
-        throw WorkspaceAccessException.LinkedConflict()
+    // Stage required bytes in temp files on disk before mutating either side to prevent OOM on large attachments
+    val stageRoot = File(context.cacheDir, "tolaria-conflict-stage-${UUID.randomUUID()}")
+    stageRoot.mkdirs()
+    try {
+      for ((destPath, value) in plan.merged) {
+        if (value == "directory") continue
+        val origin = plan.origins[destPath] ?: throw WorkspaceAccessException.InvalidState()
+        val sourceTree = if (origin.remote) remote else local
+        val bytes = sourceTree.readBytes(origin.path)
+        if (sha256Hex(bytes) != value) {
+          throw WorkspaceAccessException.LinkedConflict()
+        }
+        val stagedFile = File(stageRoot, destPath)
+        stagedFile.parentFile?.mkdirs()
+        stagedFile.writeBytes(bytes)
       }
-      stagedBytes[destPath] = bytes
-    }
 
-    val memorySource = object : ExternalWorkspaceTree {
-      override fun snapshot(): Map<String, String> = plan.merged
-      override fun fingerprint(path: String): String? = plan.merged[path]
-      override fun readBytes(path: String): ByteArray =
-        stagedBytes[path] ?: throw WorkspaceAccessException.LinkedConflict()
-      override fun createDirectory(path: String) {}
-      override fun writeBytes(path: String, data: ByteArray) {}
-      override fun remove(path: String, expected: String?) {}
-    }
+      val stagedSource = object : ExternalWorkspaceTree {
+        override fun snapshot(): Map<String, String> = plan.merged
+        override fun fingerprint(path: String): String? = plan.merged[path]
+        override fun readBytes(path: String): ByteArray {
+          val stagedFile = File(stageRoot, path)
+          if (!stagedFile.isFile) throw WorkspaceAccessException.LinkedConflict()
+          return stagedFile.readBytes()
+        }
+        override fun createDirectory(path: String) {}
+        override fun writeBytes(path: String, data: ByteArray) {}
+        override fun remove(path: String, expected: String?) {}
+      }
 
-    applyWorkspaceTreeDiff(remote, plan.merged, previousRemote, memorySource)
-    applyWorkspaceTreeDiff(local, plan.merged, previousLocal, memorySource)
+      applyWorkspaceTreeDiff(remote, plan.merged, previousRemote, stagedSource)
+      applyWorkspaceTreeDiff(local, plan.merged, previousLocal, stagedSource)
+    } finally {
+      stageRoot.deleteRecursively()
+    }
   }
 
   private fun buildConflictPreview(tree: ExternalWorkspaceTree, path: String): JSONObject {

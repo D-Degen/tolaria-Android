@@ -78,16 +78,29 @@ export function handlePhoneWorkspaceBackPress(options: PhoneWorkspaceBackHandler
   return false
 }
 
+export function shouldInterceptPhoneBackPress(options: PhoneWorkspaceBackHandlerOptions): boolean {
+  if (options.commandPaletteVisible && options.closeCommandPalette) return true
+  if (options.openAction && options.closeAction) return true
+  if (options.phoneState !== 'list') return true
+  if (options.bulkSelectionActive && options.clearBulkSelection) return true
+  if (options.searchQuery && options.clearSearch) return true
+  if (options.neighborhood && options.goBack) return true
+  if (options.canGoBack && options.goBack) return true
+  if (options.isInbox === false && options.selectInbox) return true
+  return false
+}
+
 export function usePhoneWorkspaceBackHandler(options: PhoneWorkspaceBackHandlerOptions) {
   const latest = useRef(options)
   const lastBackPressTimeRef = useRef(0)
+  const shouldIntercept = shouldInterceptPhoneBackPress(options)
 
   useLayoutEffect(() => {
     latest.current = options
   })
 
   useEffect(() => {
-    if (Platform.OS !== 'android') return
+    if (Platform.OS !== 'android' || !shouldIntercept) return
 
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
       const opts: PhoneWorkspaceBackHandlerOptions = {
@@ -101,7 +114,7 @@ export function usePhoneWorkspaceBackHandler(options: PhoneWorkspaceBackHandlerO
           if (latest.current.showExitToast) {
             latest.current.showExitToast()
           } else if (Platform.OS === 'android' && ToastAndroid?.show) {
-            ToastAndroid.show('Erneut drücken zum Beenden', ToastAndroid.SHORT)
+            ToastAndroid.show('Press back again to exit', ToastAndroid.SHORT)
           }
         },
       }
@@ -110,5 +123,5 @@ export function usePhoneWorkspaceBackHandler(options: PhoneWorkspaceBackHandlerO
     return () => {
       subscription.remove()
     }
-  }, [])
+  }, [shouldIntercept])
 }

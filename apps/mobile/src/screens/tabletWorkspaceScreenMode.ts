@@ -60,7 +60,7 @@ function compactTabletForWindow({
   screenWidth: number
   width: number
 }) {
-  return !forceDesktopPanels && !nativeIpad && width < 1080 && width < height && screenWidth < screenHeight
+  return !forceDesktopPanels && !nativeIpad && width < 1080 && (width < height || width < screenWidth * 0.75) && screenWidth > 0 && screenHeight > 0
 }
 
 function tabletPanelDefaults({

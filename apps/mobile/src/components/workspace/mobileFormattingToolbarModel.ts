@@ -10,7 +10,7 @@ const groups = {
 } as const satisfies Record<string, readonly MobileMarkdownFormatAction[]>
 
 export type FormattingToolbarGroup = keyof typeof groups
-export const formattingToolbarTouchSize = 44
+export const formattingToolbarTouchSize = 48
 
 export function formattingToolbarGroups(allowed: readonly MobileMarkdownFormatAction[], inTable: boolean) {
   const available = new Set(allowed)

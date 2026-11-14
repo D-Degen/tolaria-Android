@@ -28,7 +28,7 @@ function createStyles(colors: MobileColors, metrics: MobileMetrics) {
   return StyleSheet.create({
     position: { position: 'absolute', left: 12, right: 12, zIndex: 20, alignItems: 'center' },
     notice: { width: '100%', maxWidth: 520, flexDirection: 'row', alignItems: 'center', gap: metrics.size(8),
-      padding: metrics.size(12), borderRadius: 8, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.popover },
+      padding: metrics.size(12), borderRadius: 8, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.popover, elevation: 4 },
     message: { flex: 1, color: colors.text, fontSize: metrics.size(13), lineHeight: metrics.size(19) },
   })
 }

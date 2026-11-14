@@ -44,6 +44,7 @@ class TolariaWorkspaceAccessModule : Module() {
       val pending = pendingPickerPromise
       pendingPickerPromise = null
       pending?.resolve(null)
+      ioExecutor.shutdown()
     }
 
     OnActivityResult { _, payload ->

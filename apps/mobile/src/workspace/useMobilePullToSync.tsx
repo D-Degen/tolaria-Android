@@ -1,10 +1,12 @@
 import { useCallback, useContext, useRef, useState } from 'react'
 import { RefreshControl } from 'react-native'
+import { useMobileColors } from '../ui/theme/useMobileTheme'
 import { MobileVaultControlsContext } from './MobileVaultContext'
 import { mobilePullToSyncProps } from './mobilePullToSync'
 
 export function useMobilePullToSync() {
   const controls = useContext(MobileVaultControlsContext)
+  const colors = useMobileColors()
   const [refreshing, setRefreshing] = useState(false)
   const refreshingRef = useRef(false)
   const props = mobilePullToSyncProps(controls, refreshing)
@@ -24,5 +26,13 @@ export function useMobilePullToSync() {
     )
   }, [finishRefresh, props])
 
-  return props ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} /> : undefined
+  return props ? (
+    <RefreshControl
+      colors={[colors.primary]}
+      progressBackgroundColor={colors.card}
+      refreshing={refreshing}
+      tintColor={colors.primary}
+      onRefresh={onRefresh}
+    />
+  ) : undefined
 }

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Keyboard,
   KeyboardAvoidingView,
-  LayoutAnimation,
   Platform,
   StyleSheet,
   View,
@@ -25,7 +24,9 @@ export function MobileKeyboardAvoidingView({ children, onLayout, ...props }: Vie
   // When keyboard is dismissed, preserve bottom navigation bar inset in Android Edge-to-Edge mode.
   const paddingBottom = rawOverlap > 0 ? rawOverlap : Math.max(0, insets.bottom ?? 0)
   const measureOrigin = useCallback((event: LayoutChangeEvent) => {
-    host.current?.measureInWindow((_x, top, _width, height) => setFrame({ top, height }))
+    host.current?.measureInWindow((_x, top, _width, height) => {
+      setFrame((prev) => (prev.top === top && prev.height === height ? prev : { top, height }))
+    })
     onLayout?.(event)
   }, [onLayout])
 
@@ -54,8 +55,6 @@ function useMobileKeyboardFrame() {
       try {
         if (Platform.OS === 'ios') {
           Keyboard.scheduleLayoutAnimation(event)
-        } else if (Platform.OS === 'android') {
-          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
         }
       } catch {
         // Fallback if layout animation is unsupported
@@ -66,8 +65,6 @@ function useMobileKeyboardFrame() {
       try {
         if (Platform.OS === 'ios') {
           Keyboard.scheduleLayoutAnimation(event)
-        } else if (Platform.OS === 'android') {
-          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
         }
       } catch {
         // Fallback

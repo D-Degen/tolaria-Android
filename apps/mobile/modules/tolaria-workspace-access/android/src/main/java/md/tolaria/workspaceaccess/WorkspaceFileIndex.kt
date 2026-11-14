@@ -56,8 +56,8 @@ class WorkspaceFileIndex(
     relPath: String,
     attrs: BasicFileAttributes
   ): JSONObject {
-    val content = readTextContentIfSupported(file)
-    val contentBytes = content.toByteArray(Charsets.UTF_8)
+    val contentBytes = readTextBytesIfSupported(file)
+    val content = if (contentBytes.isEmpty()) "" else String(contentBytes, Charsets.UTF_8)
     val publishedFile = File(publishedRoot, relPath)
     val record = JSONObject()
     record.put("absolutePath", publishedFile.toURI().toString())
@@ -72,16 +72,16 @@ class WorkspaceFileIndex(
     return record
   }
 
-  private fun readTextContentIfSupported(file: File): String {
+  private fun readTextBytesIfSupported(file: File): ByteArray {
     val nameLower = file.name.lowercase()
     val extLower = file.extension.lowercase()
     if (!workspaceTextExtensions.contains(extLower) && !workspaceTextFileNames.contains(nameLower)) {
-      return ""
+      return ByteArray(0)
     }
     return try {
-      file.readText(Charsets.UTF_8)
+      file.readBytes()
     } catch (_: Throwable) {
-      ""
+      ByteArray(0)
     }
   }
 

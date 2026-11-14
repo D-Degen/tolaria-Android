@@ -2,14 +2,17 @@ package md.tolaria.smartnotes
 
 import android.Manifest
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import android.util.Log
 import androidx.core.content.ContextCompat
 import expo.modules.kotlin.Promise
 import expo.modules.kotlin.modules.Module
@@ -44,8 +47,24 @@ class TolariaSmartNotesModule : Module() {
   private var pendingStopPromise: Promise? = null
   private var continuousRecognizer: SpeechRecognizer? = null
   private var continuousIntent: Intent? = null
+  @Volatile
+  private var lastRmsEmitElapsedMs = 0L
   private val stopSafetyTimeoutRunnable = Runnable {
     resolvePendingStop()
+  }
+
+  private fun cancelPendingSpeechSynchronously() {
+    mainHandler.removeCallbacks(speechTimeoutRunnable)
+    try {
+      activeSpeechRecognizer?.stopListening()
+      activeSpeechRecognizer?.cancel()
+      activeSpeechRecognizer?.destroy()
+    } catch (_: Throwable) {}
+    activeSpeechRecognizer = null
+
+    val p = pendingSpeechPromise
+    pendingSpeechPromise = null
+    p?.resolve(null)
   }
 
   private fun finishSpeech(result: String?) {
@@ -87,14 +106,15 @@ class TolariaSmartNotesModule : Module() {
     }
   }
 
-  private fun startContinuousListeningInternal(activity: Activity) {
+  private fun startContinuousListeningInternal(context: Context) {
+    val appContext = context.applicationContext
     mainHandler.post {
       if (!isContinuousRecording) return@post
       try {
         continuousRecognizer?.destroy()
       } catch (_: Throwable) {}
 
-      val recognizer = SpeechRecognizer.createSpeechRecognizer(activity)
+      val recognizer = SpeechRecognizer.createSpeechRecognizer(appContext)
       continuousRecognizer = recognizer
 
       val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -112,14 +132,16 @@ class TolariaSmartNotesModule : Module() {
         override fun onEndOfSpeech() {}
 
         override fun onRmsChanged(rmsdB: Float) {
-          if (isContinuousRecording) {
-            try {
-              this@TolariaSmartNotesModule.sendEvent(
-                "onSpeechRmsChanged",
-                mapOf("rms" to rmsdB.toDouble())
-              )
-            } catch (_: Throwable) {}
-          }
+          if (!isContinuousRecording) return
+          val now = SystemClock.elapsedRealtime()
+          if (now - lastRmsEmitElapsedMs < 50L) return
+          lastRmsEmitElapsedMs = now
+          try {
+            this@TolariaSmartNotesModule.sendEvent(
+              "onSpeechRmsChanged",
+              mapOf("rms" to rmsdB.toDouble())
+            )
+          } catch (_: Throwable) {}
         }
 
         override fun onPartialResults(partialResults: Bundle?) {
@@ -163,7 +185,7 @@ class TolariaSmartNotesModule : Module() {
                 try {
                   continuousRecognizer?.startListening(continuousIntent)
                 } catch (_: Throwable) {
-                  startContinuousListeningInternal(activity)
+                  startContinuousListeningInternal(appContext)
                 }
               }
             }, 60)
@@ -181,7 +203,7 @@ class TolariaSmartNotesModule : Module() {
                   continuousRecognizer?.cancel()
                   continuousRecognizer?.startListening(continuousIntent)
                 } catch (_: Throwable) {
-                  startContinuousListeningInternal(activity)
+                  startContinuousListeningInternal(appContext)
                 }
               }
             }, 100)
@@ -310,18 +332,18 @@ class TolariaSmartNotesModule : Module() {
         return@AsyncFunction
       }
 
-      finishSpeech(null)
-      pendingSpeechPromise = promise
-
       mainHandler.post {
+        cancelPendingSpeechSynchronously()
+        pendingSpeechPromise = promise
         try {
+          val appCtx = activity.applicationContext
           val hasAudioPermission = ContextCompat.checkSelfPermission(
-            activity,
+            appCtx,
             Manifest.permission.RECORD_AUDIO
           ) == PackageManager.PERMISSION_GRANTED
 
-          if (hasAudioPermission && SpeechRecognizer.isRecognitionAvailable(activity)) {
-            val recognizer = SpeechRecognizer.createSpeechRecognizer(activity)
+          if (hasAudioPermission && SpeechRecognizer.isRecognitionAvailable(appCtx)) {
+            val recognizer = SpeechRecognizer.createSpeechRecognizer(appCtx)
             activeSpeechRecognizer = recognizer
 
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -401,7 +423,12 @@ class TolariaSmartNotesModule : Module() {
           return@post
         }
         isContinuousRecording = false
+        val previousStop = pendingStopPromise
+        if (previousStop != null) {
+          previousStop.resolve(null)
+        }
         pendingStopPromise = promise
+        mainHandler.removeCallbacks(stopSafetyTimeoutRunnable)
         mainHandler.postDelayed(stopSafetyTimeoutRunnable, 800)
         try {
           continuousRecognizer?.stopListening()
@@ -438,7 +465,8 @@ class TolariaSmartNotesModule : Module() {
         generativeModel = model
         generativeFutures = futures
         futures
-      } catch (_: Throwable) {
+      } catch (e: Throwable) {
+        Log.w("TolariaSmartNotes", "ML Kit GenAI Prompt API unavailable", e)
         null
       }
     }
@@ -577,7 +605,8 @@ class TolariaSmartNotesModule : Module() {
       val getTextMethod = firstCandidate.javaClass.getMethod("getText")
       val text = getTextMethod.invoke(firstCandidate) as? String
       text?.trim() ?: ""
-    } catch (_: Throwable) {
+    } catch (e: Throwable) {
+      Log.w("TolariaSmartNotes", "Failed to execute SmartNotes prompt", e)
       ""
     }
   }
